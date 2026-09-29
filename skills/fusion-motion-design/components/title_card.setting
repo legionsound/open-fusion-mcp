@@ -1,0 +1,80 @@
+{
+	Tools = ordered() {
+		TC_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "TC_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "TC_CtrlNumberIn2", Source = "Value", },
+				NumberIn3 = Input { SourceOp = "TC_CtrlNumberIn3", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		TC_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		TC_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		TC_CtrlNumberIn3 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[109] = { 0, RH = { 116, 0 } },
+				[119] = { 1, LH = { 118.9, 1 } },
+			},
+		},
+		TC_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		TC_Title = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Your Title Here", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.085, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 33 } },
+		},
+		TC_TitleXf = Transform {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - TC_Ctrl:GetValue('NumberIn1', time - 0)) - 0.0388889*TC_Ctrl.NumberIn3)", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+				Size = Input { Value = 1, Expression = "0.95 + 0.05*TC_Ctrl:GetValue('NumberIn1', time - 0) - 0.05*TC_Ctrl.NumberIn3", },
+				Input = Input { SourceOp = "TC_Title", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 33 } },
+		},
+		TC_TitleMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TC_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "TC_TitleXf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "TC_Ctrl:GetValue('NumberIn2', time - 0)*(1 - TC_Ctrl.NumberIn3)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 0 } },
+		},
+	},
+	ActiveTool = "TC_TitleMrg",
+}

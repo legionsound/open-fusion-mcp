@@ -1,0 +1,145 @@
+{
+	Tools = ordered() {
+		LT_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "LT_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "LT_CtrlNumberIn2", Source = "Value", },
+				NumberIn3 = Input { SourceOp = "LT_CtrlNumberIn3", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		LT_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		LT_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		LT_CtrlNumberIn3 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[109] = { 0, RH = { 116, 0 } },
+				[119] = { 1, LH = { 118.9, 1 } },
+			},
+		},
+		LT_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		LT_BarM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.1571693, 0.2018519 }, Expression = "Point(0.06 + 0.0971693*LT_Ctrl:GetValue('NumberIn1', time - 0), 0.2018519)", },
+				Width = Input { Value = 0.1943385, Expression = "0.1943385*LT_Ctrl:GetValue('NumberIn1', time - 0)", },
+				Height = Input { Value = 0.1237037, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 0 } },
+		},
+		LT_Bar = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0.47, },
+				TopLeftBlue = Input { Value = 0.84, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "LT_BarM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 33 } },
+		},
+		LT_BarMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "LT_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "LT_Bar", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "1 - LT_Ctrl.NumberIn3", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 0 } },
+		},
+		LT_Title = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Jane Doe", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0389583, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Center = Input { Value = { 0.0714583, 0.2219444 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		LT_TitleXf = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "LT_Title", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0185185*(1 - LT_Ctrl:GetValue('NumberIn1', time - 6)) - 0.0185185*LT_Ctrl.NumberIn3)", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 66 } },
+		},
+		LT_TitleMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "LT_BarMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "LT_TitleXf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "LT_Ctrl:GetValue('NumberIn2', time - 6)*(1 - LT_Ctrl.NumberIn3)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 0 } },
+		},
+		LT_Sub = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Director of Photography", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.0239063, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Center = Input { Value = { 0.0714583, 0.1733333 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 99 } },
+		},
+		LT_SubXf = Transform {
+			Inputs = {
+				Input = Input { SourceOp = "LT_Sub", Source = "Output", },
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0185185*(1 - LT_Ctrl:GetValue('NumberIn1', time - 9.6)) - 0.0185185*LT_Ctrl.NumberIn3)", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 99 } },
+		},
+		LT_SubMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "LT_TitleMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "LT_SubXf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "LT_Ctrl:GetValue('NumberIn2', time - 9.6)*(1 - LT_Ctrl.NumberIn3)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 0 } },
+		},
+	},
+	ActiveTool = "LT_SubMrg",
+}

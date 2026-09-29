@@ -1,0 +1,119 @@
+{
+	Tools = ordered() {
+		FX_DemoBG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = FuID { "Gradient" }, },
+				Start = Input { Value = { 0.5, 1 }, },
+				End = Input { Value = { 0.5, 0 }, },
+				Gradient = Input { Value = Gradient { Colors = { [0] = { 0.16, 0.2, 0.32, 1 }, [1] = { 0.55, 0.36, 0.3, 1 } } }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		FX_DemoTxt = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "EFFECT", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.1531771, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 33 } },
+		},
+		FX_DemoDiscM = EllipseMask {
+			Inputs = {
+				Center = Input { Value = { 0.8, 0.72 }, },
+				Width = Input { Value = 0.1, },
+				Height = Input { Value = 0.1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 66 } },
+		},
+		FX_DemoDisc = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 1, },
+				TopLeftGreen = Input { Value = 0.85, },
+				TopLeftBlue = Input { Value = 0.5, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "FX_DemoDiscM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 99 } },
+		},
+		FX_DemoMrg1 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FX_DemoBG", Source = "Output", },
+				Foreground = Input { SourceOp = "FX_DemoTxt", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 0 } },
+		},
+		FX_DemoMrg2 = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "FX_DemoMrg1", Source = "Output", },
+				Foreground = Input { SourceOp = "FX_DemoDisc", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 0 } },
+		},
+		FX_Grade = BrightnessContrast {
+			Inputs = {
+				Contrast = Input { Value = 0.12, },
+				Saturation = Input { Value = 0.88, },
+				Gamma = Input { Value = 0.96, },
+				Input = Input { SourceOp = "FX_DemoMrg2", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 0 } },
+		},
+		FX_Tone = ColorGain {
+			Inputs = {
+				GainRed = Input { Value = 1.04, },
+				GainBlue = Input { Value = 0.96, },
+				LiftGreen = Input { Value = 0.008, },
+				LiftBlue = Input { Value = 0.02, },
+				Input = Input { SourceOp = "FX_Grade", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 0 } },
+		},
+		FX_VigM = EllipseMask {
+			Inputs = {
+				Width = Input { Value = 1.3, },
+				Height = Input { Value = 0.73125, },
+				SoftEdge = Input { Value = 0.3, },
+				Invert = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 33 } },
+		},
+		FX_Vig = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "FX_VigM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 66 } },
+		},
+		FX_VigMrg = Merge {
+			Inputs = {
+				Foreground = Input { SourceOp = "FX_Vig", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 0.5, },
+				Background = Input { SourceOp = "FX_Tone", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 0 } },
+		},
+		FX_Grain = FilmGrain {
+			Inputs = {
+				MasterStrength = Input { Value = 0.03, },
+				LogProcessing = Input { Value = 0, },
+				Input = Input { SourceOp = "FX_VigMrg", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 0 } },
+		},
+	},
+	ActiveTool = "FX_Grain",
+}

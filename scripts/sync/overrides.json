@@ -1,0 +1,10 @@
+{
+ "skills/fusion-motion-design/references/qualification-evidence.md": {
+  "source_sha256": "4318b06fbbfc9164680c39d7af5833e71a008395bdac1df035a2e5bbd91c3a48",
+  "why": "client project evidence links and name removed"
+ },
+ "skills/fusion-reference/data/README.md": {
+  "source_sha256": null,
+  "why": "added: how to generate the local-only data files"
+ }
+}

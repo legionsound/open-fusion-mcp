@@ -1,0 +1,64 @@
+diff -ru a/fusion-motion-design/SKILL.md b/fusion-motion-design/SKILL.md
+--- a/fusion-motion-design/SKILL.md	2026-09-29 09:33:07
++++ b/fusion-motion-design/SKILL.md	2026-09-29 09:33:07
+@@ -23,7 +23,7 @@
+     - fusion transition
+     - fusion template
+     - after effects to fusion
+-    notes: Router and doctrine. Tool knowledge in fusion-reference; live control routing in resolve-fusion and DaVinci Resolve MCP.
++    notes: Router and doctrine. Tool knowledge in fusion-reference; live control in use-fusion and the DaVinci Resolve MCP.
+ ---
+ 
+ # Fusion motion design: clean construction, faithful motion
+@@ -137,8 +137,6 @@
+ | glass, frosted, glassmorphic or refractive panels, pills, buttons | [liquid-glass](references/liquid-glass.md) |
+ | a transition between shots, a seam effect, an Edit-page transition template | [transition-kit](references/transition-kit.md) |
+ | how a node, keyer, tracker, 3D/particle/USD tool or modifier works; an exact input ID, default, range or option | skill `fusion-reference` |
+-| objects, wires, rigs, blemishes or lettering removed from footage; tracked sign replacement | skill `fusion-cleanup` |
+-| a keyed or pre-extracted performer composited into a new or extended environment, generated plates, set extension | skill `fusion-matte-painting` |
+ | a Figma frame turned into native Fusion nodes | skill `fusion-figma-transfer` |
+ | other compositing, keying, roto, tracking or color-managed VFX rather than motion graphics | skill `fusion-reference` first, then modules 01/09 here |
+ 
+@@ -198,7 +196,7 @@
+   (`UI_BLOCKED`), stop calling, screenshot Resolve and clear the dialog before anything else; stop
+   on any dialog you do not recognise and tell the user.
+ - **Community MCP** (`davinci-resolve`, `davinci-resolve-advanced`): guarded `fusion_comp`
+-  helpers and offline `.comp` authoring; see the `resolve-fusion` skill.
++  helpers and offline `.comp` authoring.
+ - **Toolkit**: `scripts/fusion_kit.py` (exec inside `run_script_unsafe`): `make_current`,
+   `add` (no auto-wiring), `connect` (fails loudly), `ease` (cubic-bezier keys, stray-key safe),
+   `expr`, `paste_setting` (one-call build with error capture and rename map),
+diff -ru a/fusion-motion-design/references/collage/motion-and-depth.md b/fusion-motion-design/references/collage/motion-and-depth.md
+--- a/fusion-motion-design/references/collage/motion-and-depth.md	2026-09-29 09:33:07
++++ b/fusion-motion-design/references/collage/motion-and-depth.md	2026-09-29 09:33:07
+@@ -82,7 +82,7 @@
+ - Reusing keyed footage: keep a working key chain and test it on a scratch copy first. The AE source
+   needed Keylight + Key Cleaner + Advanced Spill together; the Fusion equivalent is `DeltaKeyer` (or
+   `UltraKeyer`) with its own clean-plate, matte and spill controls, sometimes plus `MatteControl`
+-  (see skill `fusion-matte-painting`). Never swap a validated key for a rough color-removal shortcut;
++  (keyer inputs: skill `fusion-reference`). Never swap a validated key for a rough color-removal shortcut;
+   check spill, edge transparency, source duration, audio state and placement against the interface.
+ 
+ ## Cadence and motion blur
+diff -ru a/fusion-reference/SKILL.md b/fusion-reference/SKILL.md
+--- a/fusion-reference/SKILL.md
++++ b/fusion-reference/SKILL.md
+@@ -24,15 +24,14 @@
+     - .setting
+     - macro
+     - text+
+-    notes: Manual-grade Fusion 21.1 knowledge and live IDs; craft/router lives in fusion-motion-design, live API routing in resolve-fusion.
++    notes: Manual-grade Fusion 21.1 knowledge and live IDs; craft/router lives in fusion-motion-design, live control in use-fusion.
+ ---
+ 
+ # Fusion reference (Resolve 21.1)
+ 
+ Knowledge, not procedure. `fusion-motion-design` is the creative procedure and router;
+-`resolve-fusion` routes live MCP/API control. VFX procedures live in `fusion-cleanup` (object, wire and
+-lettering removal) and `fusion-matte-painting` (keyed composites, set extension, generated
+-environments); Figma frames come in through `fusion-figma-transfer`. This skill answers "what does Fusion do,
++`use-fusion` covers live control through the connector (and the official DaVinci Resolve MCP beside it);
++Figma frames come in through `fusion-figma-transfer`. This skill answers "what does Fusion do,
+ exactly, and what is it called in code".
+ 
+ ## Evidence order

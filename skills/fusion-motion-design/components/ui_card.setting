@@ -1,0 +1,242 @@
+{
+	Tools = ordered() {
+		UC_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "UC_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "UC_CtrlNumberIn2", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		UC_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		UC_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		UC_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0313725, },
+				TopLeftGreen = Input { Value = 0.0352941, },
+				TopLeftBlue = Input { Value = 0.0431373, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		UC_Canvas = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 66 } },
+		},
+		UC_ShadowM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.4907407 }, },
+				Width = Input { Value = 0.2916667, },
+				Height = Input { Value = 0.1666667, },
+				CornerRadius = Input { Value = 0.1777778, },
+				SoftEdge = Input { Value = 0.0125, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 99 } },
+		},
+		UC_Shadow = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "UC_ShadowM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 132 } },
+		},
+		UC_ShadowMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_Canvas", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Shadow", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 0.35, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		UC_FillM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.2916667, },
+				Height = Input { Value = 0.1666667, },
+				CornerRadius = Input { Value = 0.1777778, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 99 } },
+		},
+		UC_Fill = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0745098, },
+				TopLeftGreen = Input { Value = 0.0784314, },
+				TopLeftBlue = Input { Value = 0.0941176, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "UC_FillM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 132 } },
+		},
+		UC_FillMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_ShadowMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Fill", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 66 } },
+		},
+		UC_RingOuterM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.2916667, },
+				Height = Input { Value = 0.1666667, },
+				CornerRadius = Input { Value = 0.1777778, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 165 } },
+		},
+		UC_RingM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.290625, },
+				Height = Input { Value = 0.1648148, },
+				CornerRadius = Input { Value = 0.1685393, },
+				PaintMode = Input { Value = FuID { "Subtract" }, },
+				EffectMask = Input { SourceOp = "UC_RingOuterM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 198 } },
+		},
+		UC_Ring = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.1490196, },
+				TopLeftGreen = Input { Value = 0.1568627, },
+				TopLeftBlue = Input { Value = 0.1803922, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "UC_RingM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 132 } },
+		},
+		UC_RingMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_FillMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Ring", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 66 } },
+		},
+		UC_Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "NEW FEATURE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0123958, },
+				Red1 = Input { Value = 0.3686275, },
+				Green1 = Input { Value = 0.4156863, },
+				Blue1 = Input { Value = 0.8235294, },
+				Center = Input { Value = { 0.3708333, 0.5462963 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+				CharacterSpacing = Input { Value = 1.08, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 132 } },
+		},
+		UC_LabelMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_RingMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "UC_Ctrl:GetValue('NumberIn2', time - 4.8)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 66 } },
+		},
+		UC_Title = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Ship your launch in minutes", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0265625, },
+				Red1 = Input { Value = 0.9803922, },
+				Green1 = Input { Value = 0.9803922, },
+				Blue1 = Input { Value = 0.9803922, },
+				Center = Input { Value = { 0.3708333, 0.5074074 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 132 } },
+		},
+		UC_TitleMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_LabelMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Title", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "UC_Ctrl:GetValue('NumberIn2', time - 6)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 66 } },
+		},
+		UC_Body = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Native Fusion motion, one call.", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.0159375, },
+				Red1 = Input { Value = 0.6313725, },
+				Green1 = Input { Value = 0.6313725, },
+				Blue1 = Input { Value = 0.6666667, },
+				Center = Input { Value = { 0.3708333, 0.4648148 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 132 } },
+		},
+		UC_BodyMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_TitleMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Body", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "UC_Ctrl:GetValue('NumberIn2', time - 7.2)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 66 } },
+		},
+		UC_Xf = Transform {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - UC_Ctrl:GetValue('NumberIn1', time - 0)))", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+				Size = Input { Value = 1, Expression = "0.95 + 0.05*UC_Ctrl:GetValue('NumberIn1', time - 0)", },
+				Input = Input { SourceOp = "UC_BodyMrg", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 770, 33 } },
+		},
+		UC_Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "UC_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "UC_Xf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "UC_Ctrl:GetValue('NumberIn2', time - 0)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 880, 0 } },
+		},
+	},
+	ActiveTool = "UC_Mrg",
+}

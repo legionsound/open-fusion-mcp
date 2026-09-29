@@ -1,0 +1,5 @@
+#!/bin/sh
+# fusion-connector doctor | config | skills-manifest | serve
+D="$(cd "$(dirname "$0")/.." && pwd)"
+export PYTHONUTF8=1 LANG="${LANG:-en_US.UTF-8}"
+cd "$D" && exec "$D/.venv/bin/python" -m fusion_connector.cli "$@"

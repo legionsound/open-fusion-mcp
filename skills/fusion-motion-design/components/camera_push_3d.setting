@@ -1,0 +1,298 @@
+{
+	Tools = ordered() {
+		CP_Card0PlateM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.46, },
+				Height = Input { Value = 0.5, },
+				CornerRadius = Input { Value = 0.2844444, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		CP_Card0Plate = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0745098, },
+				TopLeftGreen = Input { Value = 0.0784314, },
+				TopLeftBlue = Input { Value = 0.0941176, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card0PlateM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 33 } },
+		},
+		CP_Card0AccentM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.35, 0.664 }, },
+				Width = Input { Value = 0.08, },
+				Height = Input { Value = 0.012, },
+				CornerRadius = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		CP_Card0Accent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.3686275, },
+				TopLeftGreen = Input { Value = 0.4156863, },
+				TopLeftBlue = Input { Value = 0.8235294, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card0AccentM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 33 } },
+		},
+		CP_Card0MrgA = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card0Plate", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card0Accent", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 33 } },
+		},
+		CP_Card0Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Analytics", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0858854, },
+				Red1 = Input { Value = 0.9803922, },
+				Green1 = Input { Value = 0.9803922, },
+				Blue1 = Input { Value = 0.9803922, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 66 } },
+		},
+		CP_Card0Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card0MrgA", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card0Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 33 } },
+		},
+		CP_Card0 = ImagePlane3D {
+			Inputs = {
+				MaterialInput = Input { SourceOp = "CP_Card0Mrg", Source = "Output", },
+				["Transform3DOp.Translate.X"] = Input { Value = -1.140426, },
+				["Transform3DOp.Translate.Y"] = Input { Value = 0.4751775, },
+				["Transform3DOp.Translate.Z"] = Input { Value = -7, },
+				["Transform3DOp.Scale.X"] = Input { Value = 2.53428, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 33 } },
+		},
+		CP_Card1PlateM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.46, },
+				Height = Input { Value = 0.5, },
+				CornerRadius = Input { Value = 0.2844444, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 99 } },
+		},
+		CP_Card1Plate = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0745098, },
+				TopLeftGreen = Input { Value = 0.0784314, },
+				TopLeftBlue = Input { Value = 0.0941176, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card1PlateM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 132 } },
+		},
+		CP_Card1AccentM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.35, 0.664 }, },
+				Width = Input { Value = 0.08, },
+				Height = Input { Value = 0.012, },
+				CornerRadius = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 165 } },
+		},
+		CP_Card1Accent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.3686275, },
+				TopLeftGreen = Input { Value = 0.4156863, },
+				TopLeftBlue = Input { Value = 0.8235294, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card1AccentM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 132 } },
+		},
+		CP_Card1MrgA = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card1Plate", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card1Accent", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 132 } },
+		},
+		CP_Card1Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Revenue", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0858854, },
+				Red1 = Input { Value = 0.9803922, },
+				Green1 = Input { Value = 0.9803922, },
+				Blue1 = Input { Value = 0.9803922, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 165 } },
+		},
+		CP_Card1Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card1MrgA", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card1Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 132 } },
+		},
+		CP_Card1 = ImagePlane3D {
+			Inputs = {
+				MaterialInput = Input { SourceOp = "CP_Card1Mrg", Source = "Output", },
+				["Transform3DOp.Translate.X"] = Input { Value = 0.12068, },
+				["Transform3DOp.Translate.Y"] = Input { Value = -0.135765, },
+				["Transform3DOp.Translate.Z"] = Input { Value = -10, },
+				["Transform3DOp.Scale.X"] = Input { Value = 3.6204, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 132 } },
+		},
+		CP_Card2PlateM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.46, },
+				Height = Input { Value = 0.5, },
+				CornerRadius = Input { Value = 0.2844444, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 198 } },
+		},
+		CP_Card2Plate = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0745098, },
+				TopLeftGreen = Input { Value = 0.0784314, },
+				TopLeftBlue = Input { Value = 0.0941176, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card2PlateM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 231 } },
+		},
+		CP_Card2AccentM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.35, 0.664 }, },
+				Width = Input { Value = 0.08, },
+				Height = Input { Value = 0.012, },
+				CornerRadius = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 264 } },
+		},
+		CP_Card2Accent = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.3686275, },
+				TopLeftGreen = Input { Value = 0.4156863, },
+				TopLeftBlue = Input { Value = 0.8235294, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CP_Card2AccentM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 231 } },
+		},
+		CP_Card2MrgA = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card2Plate", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card2Accent", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 231 } },
+		},
+		CP_Card2Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Growth", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0858854, },
+				Red1 = Input { Value = 0.9803922, },
+				Green1 = Input { Value = 0.9803922, },
+				Blue1 = Input { Value = 0.9803922, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 264 } },
+		},
+		CP_Card2Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Card2MrgA", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Card2Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 231 } },
+		},
+		CP_Card2 = ImagePlane3D {
+			Inputs = {
+				MaterialInput = Input { SourceOp = "CP_Card2Mrg", Source = "Output", },
+				["Transform3DOp.Translate.X"] = Input { Value = 2.53428, },
+				["Transform3DOp.Translate.Y"] = Input { Value = 1.221885, },
+				["Transform3DOp.Translate.Z"] = Input { Value = -15, },
+				["Transform3DOp.Scale.X"] = Input { Value = 5.4306, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 231 } },
+		},
+		CP_Cam = Camera3D {
+			Inputs = {
+				FilmGate = Input { Value = FuID { "BMD_URSA_4K_16x9" }, },
+				ApertureW = Input { Value = 0.8315, },
+				ApertureH = Input { Value = 0.4677, },
+				FLength = Input { Value = 35, },
+				["Transform3DOp.Translate.Z"] = Input { SourceOp = "CP_CamTransform3DOpTranslateZ", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 330 } },
+		},
+		CP_CamTransform3DOpTranslateZ = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 43.2, 0 } },
+				[96] = { -1, LH = { 14.4, -1 } },
+			},
+		},
+		CP_Stage = Merge3D {
+			Inputs = {
+				SceneInput1 = Input { SourceOp = "CP_Card0", Source = "Output", },
+				SceneInput2 = Input { SourceOp = "CP_Card1", Source = "Output", },
+				SceneInput3 = Input { SourceOp = "CP_Card2", Source = "Output", },
+				SceneInput4 = Input { SourceOp = "CP_Cam", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 33 } },
+		},
+		CP_Render = Renderer3D {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Width = Input { Value = 1920, },
+				Height = Input { Value = 1080, },
+				SceneInput = Input { SourceOp = "CP_Stage", Source = "Output", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 33 } },
+		},
+		CP_Sky = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = FuID { "Gradient" }, },
+				Start = Input { Value = { 0.5, 1 }, },
+				End = Input { Value = { 0.5, 0 }, },
+				Gradient = Input { Value = Gradient { Colors = { [0] = { 0.06, 0.07, 0.12, 1 }, [1] = { 0.16, 0.18, 0.28, 1 } } }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 0 } },
+		},
+		CP_Comp = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CP_Sky", Source = "Output", },
+				Foreground = Input { SourceOp = "CP_Render", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 770, 0 } },
+		},
+	},
+	ActiveTool = "CP_Comp",
+}

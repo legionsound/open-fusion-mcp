@@ -1,0 +1,88 @@
+{
+	Tools = ordered() {
+		LR_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.043, },
+				TopLeftGreen = Input { Value = 0.051, },
+				TopLeftBlue = Input { Value = 0.071, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		LR_Logo = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "LOGO", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.1434375, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				CharacterSpacing = Input { Value = 1.06, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 66 } },
+		},
+		LR_Glow = SoftGlow {
+			Inputs = {
+				Threshold = Input { Value = 0.4, },
+				XGlowSize = Input { Value = 12, },
+				Gain = Input { SourceOp = "LR_GlowGain", Source = "Value", },
+				Input = Input { SourceOp = "LR_Logo", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		LR_GlowGain = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 7.96, 0 } },
+				[13] = { 1.2, RH = { 16.33, 1.2 }, LH = { 10.04, 1.2 } },
+				[22] = { 0.35, LH = { 18.67, 0.35 } },
+			},
+		},
+		LR_Xf = Transform {
+			Inputs = {
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 6, },
+				ShutterAngle = Input { Value = 180, },
+				Input = Input { SourceOp = "LR_Glow", Source = "Output", },
+				Size = Input { SourceOp = "LR_XfSize", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 66 } },
+		},
+		LR_Fade = BrightnessContrast {
+			Inputs = {
+				Input = Input { SourceOp = "LR_Xf", Source = "Output", },
+				Alpha = Input { Value = 1, },
+				Gain = Input { SourceOp = "LR_FadeGain", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 66 } },
+		},
+		LR_XfSize = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0.9, RH = { 0.99, 0.92 } },
+				[3] = { 0.92, RH = { 6.3, 1.05 }, LH = { 2.04, 0.92 } },
+				[13] = { 1.05, RH = { 15.22, 1.05 }, LH = { 9.8, 1.05 } },
+				[19] = { 1, LH = { 16.78, 1 } },
+			},
+		},
+		LR_FadeGain = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 2, 0.3333333 }, Flags = { Linear = true } },
+				[6] = { 1, LH = { 4, 0.6666667 }, Flags = { Linear = true } },
+			},
+		},
+		LR_Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "LR_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "LR_Fade", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 0 } },
+		},
+	},
+	ActiveTool = "LR_Mrg",
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fusion Motion Design"
+  short_description: "Author editable motion graphics in Fusion"
+  default_prompt: "Use $fusion-motion-design to build an editable Fusion motion-graphics composition from my brief."

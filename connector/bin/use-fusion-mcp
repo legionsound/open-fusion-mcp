@@ -1,0 +1,5 @@
+#!/bin/sh
+# Use Fusion MCP server (stdio). Resolves its own venv so registration needs one absolute path.
+D="$(cd "$(dirname "$0")/.." && pwd)"
+export PYTHONUTF8=1 LANG="${LANG:-en_US.UTF-8}"
+cd "$D" && exec "$D/.venv/bin/python" -m fusion_connector.server "$@"

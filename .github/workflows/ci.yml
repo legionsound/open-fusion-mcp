@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-tests:
+    name: Offline tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: connector/requirements.txt
+      - name: Install dependencies
+        run: python -m pip install -r connector/requirements.txt
+      - name: Run offline tests
+        working-directory: connector
+        env:
+          FUSION_MCP_SKILLS_ROOT: ${{ github.workspace }}/skills
+          FUSION_MCP_OUT_DIR: ${{ runner.temp }}/out
+          FUSION_MCP_CACHE_DIR: ${{ runner.temp }}/cache
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m unittest -v tests.test_offline tests.test_layout
+
+  audit:
+    name: Secrets and personal-data scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python scripts/audit.py

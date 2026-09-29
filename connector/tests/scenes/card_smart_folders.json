@@ -1,0 +1,33 @@
+{
+  "scene": "SmartFolders",
+  "notes": "Brief: an app-launch feature card. A rounded card rises in, its icon, title, body and button stagger up, then a cursor glides to the button and clicks.",
+  "size": [1920, 1080], "fps": 30, "duration": 120,
+  "controls": {"bg": "#EEF0F4", "ink": "#12141A", "muted": "#5A6070", "accent": "#3D5AFE", "card": "#FFFFFF"},
+  "textStyles": {
+    "h2": {"font": "Helvetica Neue", "style": "Bold", "size": 48, "tracking": -10, "color": "$ink"},
+    "body": {"font": "Helvetica Neue", "style": "Regular", "size": 26, "leading": 36, "color": "$muted"},
+    "label": {"font": "Helvetica Neue", "style": "Medium", "size": 24, "color": "#FFFFFF"}
+  },
+  "eases": {"MOUSE": [0.18, 0, 0.45, 1]},
+  "background": "$bg",
+  "layers": [
+    {"id": "card", "type": "group", "size": [600, null], "background": "$card", "radius": 32, "align": "center",
+     "layout": {"type": "stack", "direction": "vertical", "gap": 28, "padding": 64},
+     "effects": [{"type": "shadow", "offset": [0, 28], "blur": 56, "opacity": 16}],
+     "enter": {"preset": "fadeUp", "at": 0, "duration": 22, "from": {"y": 90, "opacity": 0}},
+     "stagger": {"each": 4, "enter": {"preset": "fadeUp", "at": 12}},
+     "layers": [
+       {"id": "icon", "type": "rect", "size": [80, 80], "radius": 22, "fill": "$accent"},
+       {"id": "headline", "type": "text", "text": {"content": "Smart Folders", "textStyle": "h2"}},
+       {"id": "body", "type": "text", "text": {"content": "Your footage sorts itself\nby scene, face and place.", "textStyle": "body"}},
+       {"id": "cta", "type": "group", "size": [240, 68], "radius": 34, "background": "$accent",
+        "keys": {"scale": [[70, 100, "ease"], [74, 94, "ease"], [80, 100]]},
+        "layers": [{"id": "cta_label", "type": "text", "text": {"content": "Try it", "textStyle": "label"}, "align": "center"}]}
+     ]},
+    {"id": "cursor", "type": "path", "points": [[0, 0], [0, 34], [9, 26], [16, 42], [22, 39], [15, 24], [27, 24]],
+     "fill": "#12141A", "stroke": {"color": "#FFFFFF", "width": 2},
+     "align": {"to": "cta", "x": "center", "y": "center", "offset": [18, 10]},
+     "enter": {"at": 40, "duration": 26, "ease": "MOUSE", "from": {"x": 420, "y": 260, "opacity": 0}},
+     "keys": {"scale": [[70, 100, "ease"], [74, 86, "ease"], [80, 100]]}}
+  ]
+}

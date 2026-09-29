@@ -1,0 +1,111 @@
+{
+	Tools = ordered() {
+		RF_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "RF_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "RF_CtrlNumberIn2", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		RF_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		RF_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		RF_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.043, },
+				TopLeftGreen = Input { Value = 0.051, },
+				TopLeftBlue = Input { Value = 0.071, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		RF_El0 = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Static headline", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0717187, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Center = Input { Value = { 0.5, 0.58 }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 33 } },
+		},
+		RF_El0Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "RF_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "RF_El0", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - RF_Ctrl:GetValue('NumberIn1', time - 0)))", },
+				Blend = Input { Value = 1, Expression = "RF_Ctrl:GetValue('NumberIn2', time - 0)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 0 } },
+		},
+		RF_El1 = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Supporting line", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.0336458, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Center = Input { Value = { 0.5, 0.45 }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 33 } },
+		},
+		RF_El1Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "RF_El0Mrg", Source = "Output", },
+				Foreground = Input { SourceOp = "RF_El1", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - RF_Ctrl:GetValue('NumberIn1', time - 3.6)))", },
+				Blend = Input { Value = 1, Expression = "RF_Ctrl:GetValue('NumberIn2', time - 3.6)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 0 } },
+		},
+		RF_El2 = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Call to action", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0283333, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+				Center = Input { Value = { 0.5, 0.34 }, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 33 } },
+		},
+		RF_El2Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "RF_El1Mrg", Source = "Output", },
+				Foreground = Input { SourceOp = "RF_El2", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - RF_Ctrl:GetValue('NumberIn1', time - 7.2)))", },
+				Blend = Input { Value = 1, Expression = "RF_Ctrl:GetValue('NumberIn2', time - 7.2)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 0 } },
+		},
+	},
+	ActiveTool = "RF_El2Mrg",
+}

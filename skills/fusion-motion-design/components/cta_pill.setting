@@ -1,0 +1,112 @@
+{
+	Tools = ordered() {
+		CTA_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "CTA_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "CTA_CtrlNumberIn2", Source = "Value", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		CTA_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		CTA_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		CTA_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0313725, },
+				TopLeftGreen = Input { Value = 0.0352941, },
+				TopLeftBlue = Input { Value = 0.0431373, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		CTA_PlateM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.12, },
+				Height = Input { Value = 0.0592593, },
+				CornerRadius = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		CTA_Plate = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.3686275, },
+				TopLeftGreen = Input { Value = 0.4156863, },
+				TopLeftBlue = Input { Value = 0.8235294, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "CTA_PlateM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 99 } },
+		},
+		CTA_Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "Get started", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.02125, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 132 } },
+		},
+		CTA_LabelMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CTA_Plate", Source = "Output", },
+				Foreground = Input { SourceOp = "CTA_Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 99 } },
+		},
+		CTA_Glow = Shadow {
+			Inputs = {
+				Input = Input { SourceOp = "CTA_LabelMrg", Source = "Output", },
+				ShadowOffset = Input { Value = { 0.5, 0.4925926 }, },
+				Softness = Input { Value = 0.02, },
+				Red = Input { Value = 0.3686275, },
+				Green = Input { Value = 0.4156863, },
+				Blue = Input { Value = 0.8235294, },
+				Alpha = Input { Value = 0.45, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 99 } },
+		},
+		CTA_Xf = Transform {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - CTA_Ctrl:GetValue('NumberIn1', time - 0)))", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+				Size = Input { Value = 1, Expression = "0.95 + 0.05*CTA_Ctrl:GetValue('NumberIn1', time - 0)", },
+				Input = Input { SourceOp = "CTA_Glow", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 33 } },
+		},
+		CTA_Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "CTA_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "CTA_Xf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "CTA_Ctrl:GetValue('NumberIn2', time - 0)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 0 } },
+		},
+	},
+	ActiveTool = "CTA_Mrg",
+}

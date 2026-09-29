@@ -1,0 +1,52 @@
+{
+	Tools = ordered() {
+		TA_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.043, },
+				TopLeftGreen = Input { Value = 0.051, },
+				TopLeftBlue = Input { Value = 0.071, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		TA_Text = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { SourceOp = "TA_Fol", Source = "StyledText", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0858854, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 33 } },
+		},
+		TA_Fol = StyledTextFollower {
+			Inputs = {
+				Text = Input { Value = StyledText { Value = "MAKE IT MOVE" }, },
+				Order = Input { Value = 0, },
+				DelayType = Input { Value = 2, },
+				Delay = Input { Value = 35, },
+				Opacity1 = Input { SourceOp = "TA_FolOpacity1", Source = "Value", },
+			},
+		},
+		TA_FolOpacity1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 0.3333333, 0.3333333 }, Flags = { StepIn = true } },
+				[1] = { 1, LH = { 0.6666667, 0.6666667 }, Flags = { StepIn = true } },
+			},
+		},
+		TA_Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "TA_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "TA_Text", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 0 } },
+		},
+	},
+	ActiveTool = "TA_Mrg",
+}

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "scene": "Showcase",
+  "size": [1920, 1080],
+  "fps": 30,
+  "duration": 120,
+  "background": {"gradient": {"type": "linear", "from": [0, 0], "to": [1920, 1080], "stops": [[0, "#0C1122"], [1, "#1B2A5C"]]}},
+  "motionBlur": {"shutter": 180, "samples": 8},
+  "controls": {"accent": "#FF4B2B", "paper": "#F3F0E8", "ink": "#0A0D14"},
+  "eases": {"ARRIVE": [0.15, 0, 0.15, 1], "GLIDE": [0.3333, 0, 0.2285, 1], "MOUSE": [0.18, 0, 0.45, 1]},
+  "assets": {
+    "APP": {"size": [960, 600], "layers": [
+      {"id": "app_surface", "type": "rect", "size": [960, 600], "radius": 28, "fill": "$paper", "position": [480, 300]},
+      {"id": "app_bar", "type": "rect", "size": [960, 64], "fill": "#E4DFD3", "position": [480, 32]},
+      {"id": "app_dot1", "type": "ellipse", "size": [16, 16], "fill": "#FF5F57", "position": [36, 32]},
+      {"id": "app_dot2", "type": "ellipse", "size": [16, 16], "fill": "#FEBC2E", "position": [64, 32]},
+      {"id": "app_head", "type": "text", "position": [64, 180], "text": {"content": "Find the take.", "font": "Helvetica Neue", "style": "Bold", "size": 64, "color": "$ink"}},
+      {"id": "app_body", "type": "text", "position": [64, 250], "text": {"content": "Search every shot by what happens in it.", "font": "Helvetica Neue", "style": "Regular", "size": 28, "color": "#4A4F5C"}},
+      {"id": "app_button", "type": "rect", "size": [220, 72], "radius": 36, "fill": "$accent", "position": [174, 420],
+       "keys": {"scale": [[70, 100, "ease"], [74, 94, "ease"], [80, 100]]}},
+      {"id": "app_label", "type": "text", "position": [174, 431], "text": {"content": "Search", "font": "Helvetica Neue", "style": "Bold", "size": 28, "color": "#FFFFFF", "align": "center"},
+       "keys": {"scale": [[70, 100, "ease"], [74, 94, "ease"], [80, 100]]}, "anchor": [0, -11]},
+      {"id": "cursor", "type": "path", "points": [[0, 0], [0, 34], [9, 26], [16, 42], [22, 39], [15, 24], [27, 24]], "closed": true,
+       "fill": "#0A0D14", "stroke": {"color": "#FFFFFF", "width": 2}, "position": [700, 520],
+       "keys": {"position": [[20, [700, 520], "MOUSE"], [62, [206, 432]]], "scale": [[70, 100, "ease"], [74, 88, "ease"], [80, 100]]}}
+    ]}
+  },
+  "layers": [
+    {"id": "camera", "type": "camera", "position": [960, 540, -2666.7], "poi": [960, 540, 0], "zoom": 2666.7,
+     "keys": {"position": [[0, [960, 540, -3000], "GLIDE"], [90, [960, 540, -2400]]]},
+     "dof": {"focus": 2666.7, "aperture": 40}},
+    {"id": "card", "type": "group", "use": "APP", "position": [960, 560, 0], "threeD": true,
+     "keys": {"rotationY": [[0, -14, "GLIDE"], [90, 0]], "opacity": [[0, 0], [10, 100]]}},
+    {"id": "title", "type": "text", "position": [160, 170], "in": 6,
+     "text": {"content": "Cut to the moment.", "font": "Helvetica Neue", "style": "Bold", "size": 84, "color": "$paper", "tracking": -10},
+     "animators": [{"type": "cascade", "start": 8, "stagger": 1.5, "duration": 14, "ease": "out_expo", "from": {"y": 36, "opacity": 0}}]},
+    {"id": "badge", "type": "rect", "size": [180, 44], "radius": 22, "fill": "$accent", "position": [250, 250], "opacity": 100,
+     "keys": {"opacity": [[20, 0], [30, 100]], "position": [[20, [250, 270], "out_expo"], [34, [250, 250]]]}, "in": 18}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "scene": "LowTide",
+  "notes": "Brief: a 5 s documentary title. Deep tide-blue field, the title builds letter by letter, a glint line draws under it, the credit fades up, the block drifts left, then everything leaves.",
+  "size": [1920, 1080], "fps": 30, "duration": 150,
+  "controls": {"tide": "#0B1E33", "deep": "#12385A", "foam": "#E9F1F2", "glint": "#F2C14E"},
+  "textStyles": {
+    "title": {"font": "Helvetica Neue", "style": "Bold", "size": 168, "tracking": -30, "color": "$foam"},
+    "kicker": {"font": "Helvetica Neue", "style": "Medium", "size": 24, "tracking": 240, "color": "$glint"},
+    "credit": {"font": "Helvetica Neue", "style": "Light", "size": 32, "tracking": 40, "color": "$foam"}
+  },
+  "background": {"gradient": {"from": [0, 0], "to": [1920, 1080], "stops": [[0, "$tide"], [1, "$deep"]]}},
+  "layers": [
+    {"id": "swell", "type": "ellipse", "size": [1500, 1500], "fill": "#1B4A6E", "opacity": 55, "position": [1560, 1180],
+     "effects": [{"type": "blur", "radius": 80}], "keys": {"position": [[0, [1560, 1220]], [150, [1480, 1160]]]}},
+    {"id": "block", "type": "group", "keys": {"position": [[0, [960, 540]], [150, [920, 540]]]}, "layers": [
+      {"id": "title", "type": "text", "text": {"content": "Low Tide", "textStyle": "title"}, "align": "center",
+       "animators": [{"type": "cascade", "start": 14, "stagger": 2, "duration": 18, "ease": "out_expo", "from": {"y": 60, "opacity": 0}}],
+       "exit": {"preset": "fadeOutUp", "at": 126}},
+      {"id": "kicker", "type": "text", "text": {"content": "A FILM BY MARA OSEI", "textStyle": "kicker"},
+       "align": {"to": "title", "place": "above", "gap": 40, "x": "left"}, "enter": {"preset": "fadeUp", "at": 8}, "exit": {"preset": "fadeOut", "at": 124}},
+      {"id": "rule", "type": "path", "points": [[0, 0], [560, 0]], "closed": false, "fill": null,
+       "stroke": {"color": "$glint", "width": 4, "cap": "round"}, "trim": {"start": 0, "end": 0},
+       "keys": {"trimEnd": [[30, 0, "out_expo"], [56, 100]]}, "align": {"to": "title", "place": "below", "gap": 44, "x": "left"},
+       "exit": {"preset": "fadeOut", "at": 126}},
+      {"id": "credit", "type": "text", "text": {"content": "In cinemas this winter", "textStyle": "credit"},
+       "align": {"to": "rule", "place": "below", "gap": 36, "x": "left"}, "enter": {"preset": "fadeUp", "at": 44}, "exit": {"preset": "fadeOut", "at": 128}}
+    ]}
+  ],
+  "grain": {"strength": 0.01}
+}

@@ -1,0 +1,320 @@
+{
+ "scene": "ThreeWorlds",
+ "notes": "Brief: a 3D product-style push. Three cards float in depth, the side cards angled in; the camera pushes in slowly with shallow focus on the hero; soft specks drift; a line of copy settles at the bottom.",
+ "size": [
+  1920,
+  1080
+ ],
+ "fps": 30,
+ "duration": 150,
+ "controls": {
+  "night": "#07080C",
+  "paper": "#F4F1EA",
+  "ember": "#FF6B3D",
+  "sea": "#2F6BFF",
+  "moss": "#2FB67C"
+ },
+ "textStyles": {
+  "cardTitle": {
+   "font": "Helvetica Neue",
+   "style": "Bold",
+   "size": 44,
+   "color": "$paper"
+  },
+  "line": {
+   "font": "Helvetica Neue",
+   "style": "Light",
+   "size": 40,
+   "tracking": 20,
+   "color": "$paper"
+  }
+ },
+ "eases": {
+  "GLIDE": [
+   0.3333,
+   0,
+   0.2285,
+   1
+  ]
+ },
+ "background": "$night",
+ "assets": {
+  "EMBER": {
+   "size": [
+    640,
+    400
+   ],
+   "background": "$ember",
+   "layers": [
+    {
+     "id": "ember_sun",
+     "type": "ellipse",
+     "size": [
+      220,
+      220
+     ],
+     "fill": "#FFD2A8",
+     "position": [
+      470,
+      150
+     ]
+    },
+    {
+     "id": "ember_title",
+     "type": "text",
+     "text": {
+      "content": "Ember",
+      "textStyle": "cardTitle"
+     },
+     "align": "bottom-left",
+     "offset": [
+      44,
+      -40
+     ]
+    }
+   ]
+  },
+  "SEA": {
+   "size": [
+    640,
+    400
+   ],
+   "background": "$sea",
+   "layers": [
+    {
+     "id": "sea_wave",
+     "type": "rect",
+     "size": [
+      640,
+      150
+     ],
+     "fill": "#1D3F9E",
+     "position": [
+      320,
+      325
+     ]
+    },
+    {
+     "id": "sea_title",
+     "type": "text",
+     "text": {
+      "content": "Sea",
+      "textStyle": "cardTitle"
+     },
+     "align": "bottom-left",
+     "offset": [
+      44,
+      -40
+     ]
+    }
+   ]
+  },
+  "MOSS": {
+   "size": [
+    640,
+    400
+   ],
+   "background": "$moss",
+   "layers": [
+    {
+     "id": "moss_hill",
+     "type": "path",
+     "points": [
+      [
+       0,
+       400
+      ],
+      [
+       0,
+       250
+      ],
+      [
+       260,
+       170
+      ],
+      [
+       640,
+       290
+      ],
+      [
+       640,
+       400
+      ]
+     ],
+     "fill": "#1B7A51"
+    },
+    {
+     "id": "moss_title",
+     "type": "text",
+     "text": {
+      "content": "Moss",
+      "textStyle": "cardTitle"
+     },
+     "align": "bottom-left",
+     "offset": [
+      44,
+      -40
+     ]
+    }
+   ]
+  }
+ },
+ "layers": [
+  {
+   "id": "cam",
+   "type": "camera",
+   "zoom": 2666.7,
+   "poi": [
+    960,
+    540,
+    0
+   ],
+   "keys": {
+    "position": [
+     [
+      0,
+      [
+       960,
+       540,
+       -3300
+      ],
+      "GLIDE"
+     ],
+     [
+      150,
+      [
+       960,
+       540,
+       -2350
+      ]
+     ]
+    ]
+   },
+   "dof": {
+    "focus": "hero",
+    "aperture": 70
+   }
+  },
+  {
+   "id": "s1",
+   "type": "ellipse",
+   "size": [
+    60,
+    60
+   ],
+   "fill": "#FFFFFF",
+   "position": [
+    300,
+    260,
+    900
+   ],
+   "opacity": 25
+  },
+  {
+   "id": "s2",
+   "type": "ellipse",
+   "size": [
+    60,
+    60
+   ],
+   "fill": "#FFFFFF",
+   "position": [
+    1650,
+    330,
+    1400
+   ],
+   "opacity": 20
+  },
+  {
+   "id": "s3",
+   "type": "ellipse",
+   "size": [
+    60,
+    60
+   ],
+   "fill": "#FFFFFF",
+   "position": [
+    1180,
+    880,
+    -900
+   ],
+   "opacity": 18
+  },
+  {
+   "id": "s4",
+   "type": "ellipse",
+   "size": [
+    60,
+    60
+   ],
+   "fill": "#FFFFFF",
+   "position": [
+    640,
+    820,
+    -1300
+   ],
+   "opacity": 15
+  },
+  {
+   "id": "left",
+   "type": "group",
+   "use": "EMBER",
+   "position": [
+    330,
+    560,
+    320
+   ],
+   "rotationY": 22,
+   "enter": {
+    "preset": "fadeUp",
+    "at": 8,
+    "duration": 24
+   }
+  },
+  {
+   "id": "right",
+   "type": "group",
+   "use": "MOSS",
+   "position": [
+    1590,
+    560,
+    320
+   ],
+   "rotationY": -22,
+   "enter": {
+    "preset": "fadeUp",
+    "at": 12,
+    "duration": 24
+   }
+  },
+  {
+   "id": "hero",
+   "type": "group",
+   "use": "SEA",
+   "position": [
+    960,
+    540,
+    0
+   ],
+   "enter": {
+    "preset": "fadeUp",
+    "at": 0,
+    "duration": 24
+   }
+  },
+  {
+   "id": "line",
+   "type": "text",
+   "text": {
+    "content": "Three worlds. One timeline.",
+    "textStyle": "line"
+   },
+   "align": "bottom",
+   "enter": {
+    "preset": "fadeUp",
+    "at": 60,
+    "duration": 20
+   }
+  }
+ ]
+}

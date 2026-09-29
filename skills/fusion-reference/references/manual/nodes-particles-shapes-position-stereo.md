@@ -1,0 +1,8 @@
+# Fusion Node Reference: Particle, Position, Resolve Connect, Shape, and Stereo Nodes
+
+Index. This reference is 62k chars, split into 2 parts so each fits one `fu_get_skill` call. Open the part that holds the section you need, or call `fu_get_skill` with `section: "<heading>"` on this file (the connector searches the parts). Parts keep the original headings and links.
+
+| Part | Size | Sections |
+|---|---|---|
+| [nodes-particles-shapes-position-stereo-1.md](nodes-particles-shapes-position-stereo-1.md) | 31k | Mental model; Particle Nodes; Shared plumbing (read first); pEmitter [pEm]; pImage Emitter [pIE]; pRender [pRn]; pAvoid [pAv]; pBounce [pBn]; pChangeStyle [pCS]; pCustom [pCu]; pCustomForce [pCF]; pDirectionalForce [pDF]; pFlock [pFl]; pFollow [pFo]; pFriction [pFr]; pGradientForce [pGF]; pKill [pKI]; pMerge [pMg]; pPoint Force [pPF]; pSpawn [pSp]; pTangent Force [pTF]; pTurbulence [pTr]; pVortex [pVt]; Particle Common Controls (Style / Conditions / Region / Settings tabs); Position Nodes; Volume Fog [VLF]; Volume Mask [VLM]; Z to World Pos [Z2W]; WPP Concept (reference, no controls); Resolve Connect; External Matte Saver [EMS] |
+| [nodes-particles-shapes-position-stereo-2.md](nodes-particles-shapes-position-stereo-2.md) | 31k | Shape Nodes; sBoolean; sBSpline [sBSp]; sChangeStyle [sCS]; sDuplicate; sEllipse; sExpand; sGrid; sJitter; sMerge; sNGon; sOutline; sPolygon [sPly]; sRectangle; sRender; sStar; sText [sTxt]; sTransform; Shape Common Controls (Settings tab); Stereo Nodes; Anaglyph [ANA]; Combiner [Com]; Disparity [Dis]; Disparity To Z [D2Z]; Global Align [GA]; New Eye [NE]; Splitter [Spl]; Stereo Align [SA]; Z To Disparity [Z2D]; Gotchas and non-obvious behavior; Recipes / workflows; Scripting and automation hooks |

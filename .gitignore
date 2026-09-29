@@ -1,0 +1,19 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+out/
+*.log
+*.orig
+*.rej
+# generated at run time by the connector
+connector/skills-manifest.json
+# local-only: harvested from the user's own Resolve install (see skills/fusion-reference/data/README.md)
+skills/fusion-reference/data/*.tsv
+skills/fusion-reference/data/*.pyi
+# local-only sync config: source paths, private redaction rules and scan terms
+scripts/sync.local.env
+scripts/sync/private.json
+# live-test results (local paths)
+connector/tests/cache_live_results.json
+connector/tests/layout_live_results.json

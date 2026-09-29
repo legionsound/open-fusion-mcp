@@ -1,0 +1,8 @@
+# 3D Light, Material, and Texture Nodes (Fusion)
+
+Index. This reference is 46k chars, split into 2 parts so each fits one `fu_get_skill` call. Open the part that holds the section you need, or call `fu_get_skill` with `section: "<heading>"` on this file (the connector searches the parts). Parts keep the original headings and links.
+
+| Part | Size | Sections |
+|---|---|---|
+| [nodes-3d-lights-materials-textures-1.md](nodes-3d-lights-materials-textures-1.md) | 28k | Mental model; Common Controls (documented once; referenced by name from each node below); Common Transform Tab (3D Lights and most 3D tools) (p. 812-814); Common Settings Tab (present on nearly every 3D node) (p. 814, 849, 875); Standard Shadow Controls (first appears on Directional Light, p. 800-802; identical on Point Light p. 805-807 and Spot Light p. 810-811); Standard Illumination-Material Controls (first appears on Blinn, p. 818-820; reused near-identically by Cook Torrance, Phong, Ward, OpenPBR); 3D Light Nodes; Ambient Light (3AL); Directional Light (3DL); DomeLight (3Do); Point Light (3PL); Spot Light (3SL); 3D Material Nodes; Blinn (3Bl); Channel Boolean (3Bol); Cook Torrance (3CT); Material Merge 3D (3MM); OpenPBR (3OP); Phong (3Ph); Reflect (3RR); Stereo Mix (3SMM); Ward (3Wd) |
+| [nodes-3d-lights-materials-textures-2.md](nodes-3d-lights-materials-textures-2.md) | 18k | 3D Texture Nodes; Bump Map (3Bu); Catcher (3Ca); CubeMap (3Cu); Falloff (3Fa); Fast Noise Texture (3FN); Gradient 3D (3Gd); ReliefMap (3RM); Sphere Map (3SpM); Texture 2D (3Tx); Texture Transform (3TT); Gotchas and non-obvious behavior; Recipes / workflows; Scripting and automation hooks |

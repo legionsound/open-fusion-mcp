@@ -1,0 +1,26 @@
+{
+ "_note": "Copy to private.json (git-ignored) and fill in. exclude: 'root/path' globs that must never ship (for example a client's fixture). scan: extra [label, regex] terms that must never reach the repo (people, clients, local folders). redact: [regex, replacement] rules the sync applies to shipped text; a replacement starting with 'the ' is capitalized at a sentence start.",
+ "exclude": [
+  "connector/tests/scenes/example_client_scene.json"
+ ],
+ "scan": [
+  [
+   "personal name",
+   "(?i)\\bexample-name\\b"
+  ],
+  [
+   "client name",
+   "(?i)\\bexample-client\\b"
+  ]
+ ],
+ "redact": [
+  [
+   "/Users/you/\\.agents/skills",
+   "/path/to/skills"
+  ],
+  [
+   "\\bExample Client ad\\b",
+   "benchmark ad"
+  ]
+ ]
+}

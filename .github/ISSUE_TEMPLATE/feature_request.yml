@@ -1,0 +1,20 @@
+name: Feature request
+description: A missing operation, builder feature or skill topic.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to make?
+      description: The shot, effect or workflow, and where the agent gets stuck today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: An operation, a scene-builder layer type or option, or a skill section. Fusion node names welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you tried

@@ -1,0 +1,402 @@
+{
+	Tools = ordered() {
+		LG_Backdrop = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				Type = Input { Value = FuID { "Corner" }, },
+				TopLeftRed = Input { Value = 0.95, },
+				TopLeftGreen = Input { Value = 0.35, },
+				TopLeftBlue = Input { Value = 0.2, },
+				TopRightRed = Input { Value = 0.2, },
+				TopRightGreen = Input { Value = 0.5, },
+				TopRightBlue = Input { Value = 0.95, },
+				BottomLeftRed = Input { Value = 0.1, },
+				BottomLeftGreen = Input { Value = 0.8, },
+				BottomLeftBlue = Input { Value = 0.6, },
+				BottomRightRed = Input { Value = 0.9, },
+				BottomRightGreen = Input { Value = 0.8, },
+				BottomRightBlue = Input { Value = 0.1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 66 } },
+		},
+		LG_BackdropTxt = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "LIQUID GLASS", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.1239583, },
+				Red1 = Input { Value = 1, },
+				Green1 = Input { Value = 1, },
+				Blue1 = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 99 } },
+		},
+		LG_BackdropMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "LG_Backdrop", Source = "Output", },
+				Foreground = Input { SourceOp = "LG_BackdropTxt", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		LG_Glass = GroupOperator {
+			Inputs = ordered() {
+				MainInput1 = InstanceInput { SourceOp = "LG_GlassIn", Source = "Input", },
+				CenterX = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn1", Name = "Center X", },
+				CenterY = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn2", Name = "Center Y", },
+				Scale = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn3", Name = "Scale", MinScale = 0.5, MaxScale = 1.5, },
+				PanelWidth = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn4", Name = "Width (w/W)", },
+				PanelHeight = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn5", Name = "Height (h/H)", },
+				Roundness = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn6", Name = "Roundness", MinScale = 0, MaxScale = 1, },
+				Bezel = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn7", Name = "Bezel (px)", MinScale = 0, MaxScale = 100, },
+				Refraction = InstanceInput { SourceOp = "LG_GlassCtrl", Source = "NumberIn8", Name = "Refraction", MinScale = -0.1, MaxScale = 0.1, },
+				Magnify = InstanceInput { SourceOp = "LG_GlassMagnify", Source = "Size", Name = "Magnify", MinScale = 1, MaxScale = 1.2, },
+				Lens = InstanceInput { SourceOp = "LG_GlassLens", Source = "Strength", Name = "Lens", MinScale = 0, MaxScale = 1, },
+				BodyTexture = InstanceInput { SourceOp = "LG_BodyRefract", Source = "XRefraction", Name = "Body Texture", MinScale = 0, MaxScale = 0.02, },
+				Frost = InstanceInput { SourceOp = "LG_GlassFrost", Source = "XBlurSize", Name = "Frost", MinScale = 0, MaxScale = 40, },
+				Saturation = InstanceInput { SourceOp = "LG_GlassSat", Source = "Saturation", Name = "Backdrop Saturation", MinScale = 1, MaxScale = 2, },
+				Tint = InstanceInput { SourceOp = "LG_GlassTint", Source = "Blend", Name = "Tint Opacity", MinScale = 0, MaxScale = 1, },
+				EdgeDark = InstanceInput { SourceOp = "LG_EdgeDarken", Source = "Gain", Name = "Edge Darkness (gain)", MinScale = 0.8, MaxScale = 1, },
+				RimIntensity = InstanceInput { SourceOp = "LG_RimLight", Source = "Brightness", Name = "Rim Intensity", MinScale = 0, MaxScale = 1.5, },
+				RimAngle = InstanceInput { SourceOp = "LG_GlassLook", Source = "NumberIn1", Name = "Rim Angle", MinScale = 90, MaxScale = 180, },
+				RimArc = InstanceInput { SourceOp = "LG_GlassLook", Source = "NumberIn2", Name = "Rim Arc", MinScale = 0, MaxScale = 0.05, },
+				ShadowGain = InstanceInput { SourceOp = "LG_ShadowDarken", Source = "Gain", Name = "Shadow (gain)", MinScale = 0.5, MaxScale = 1, },
+				ShadowDrop = InstanceInput { SourceOp = "LG_GlassLook", Source = "NumberIn4", Name = "Shadow Drop", MinScale = 0, MaxScale = 0.05, },
+				Grain = InstanceInput { SourceOp = "LG_GlassGrain", Source = "MasterStrength", Name = "Frost Grain", MinScale = 0, MaxScale = 0.1, },
+				Opacity = InstanceInput { SourceOp = "LG_GlassFade", Source = "Blend", Name = "Glass Opacity", },
+			},
+			Outputs = {
+				MainOutput1 = InstanceOutput { SourceOp = "LG_GlassFade", Source = "Output", },
+			},
+			ViewInfo = GroupInfo { Pos = { 220, 0 } },
+			Tools = ordered() {
+				LG_GlassCtrl = Custom {
+					Inputs = {
+						NumberIn1 = Input { Value = 0.5, },
+						NumberIn2 = Input { Value = 0.5, },
+						NumberIn3 = Input { Value = 1, },
+						NumberIn4 = Input { Value = 0.35, },
+						NumberIn5 = Input { Value = 0.2828283, },
+						NumberIn6 = Input { Value = 1, },
+						NumberIn7 = Input { Value = 35, },
+						NumberIn8 = Input { Value = 0.06, },
+						NameforNumber1 = Input { Value = "Center X", },
+						NameforNumber2 = Input { Value = "Center Y", },
+						NameforNumber3 = Input { Value = "Scale", },
+						NameforNumber4 = Input { Value = "Width (w/W)", },
+						NameforNumber5 = Input { Value = "Height (h/H)", },
+						NameforNumber6 = Input { Value = "Roundness", },
+						NameforNumber7 = Input { Value = "Bezel px", },
+						NameforNumber8 = Input { Value = "Refraction", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 0, -198 } },
+				},
+				LG_GlassLook = Custom {
+					Inputs = {
+						NumberIn1 = Input { Value = 154, },
+						NumberIn2 = Input { Value = 0.0156, },
+						NumberIn3 = Input { Value = 0.00156, },
+						NumberIn4 = Input { Value = 0.0139, },
+						NumberIn5 = Input { Value = 0.0208, },
+						NumberIn6 = Input { Value = 0.0039, },
+						NumberIn7 = Input { Value = 0.00078, },
+						NumberIn8 = Input { Value = 1, },
+						NameforNumber1 = Input { Value = "Rim Angle", },
+						NameforNumber2 = Input { Value = "Rim Arc", },
+						NameforNumber3 = Input { Value = "Rim Thickness", },
+						NameforNumber4 = Input { Value = "Shadow Drop", },
+						NameforNumber5 = Input { Value = "Shadow Soft", },
+						NameforNumber6 = Input { Value = "Edge Soft", },
+						NameforNumber7 = Input { Value = "Edge Choke", },
+						NameforNumber8 = Input { Value = "Lens k", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 110, -198 } },
+				},
+				LG_GlassIn = PipeRouter {
+					Inputs = {
+						Input = Input { SourceOp = "LG_BackdropMrg", Source = "Output", },
+					},
+					ViewInfo = PipeRouterInfo { Pos = { 0, 0 } },
+				},
+				LG_PillMask = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 990, -99 } },
+				},
+				LG_ShadowMask = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2 - LG_GlassLook.NumberIn4*LG_GlassCtrl.NumberIn3)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+						SoftEdge = Input { Value = 0.0208, Expression = "LG_GlassLook.NumberIn5*LG_GlassCtrl.NumberIn3", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 110, -99 } },
+				},
+				LG_EdgeDarkOuter = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+						BorderWidth = Input { Value = 0.001, },
+						SoftEdge = Input { Value = 0.0039, Expression = "LG_GlassLook.NumberIn6*LG_GlassCtrl.NumberIn3", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1210, -132 } },
+				},
+				LG_EdgeDarkHole = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+						PaintMode = Input { Value = FuID { "Subtract" }, },
+						BorderWidth = Input { Value = -0.00078, Expression = "-LG_GlassLook.NumberIn7*LG_GlassCtrl.NumberIn3", },
+						EffectMask = Input { SourceOp = "LG_EdgeDarkOuter", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1210, -99 } },
+				},
+				LG_RimGradient = Background {
+					Inputs = {
+						UseFrameFormatSettings = Input { Value = 1, },
+						Type = Input { Value = FuID { "Gradient" }, },
+						GradientType = Input { Value = FuID { "Reflect" }, },
+						Start = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						End = Input { Value = { 0.5068, 0.5249 }, Expression = "Point(LG_GlassCtrl.NumberIn1 + LG_GlassLook.NumberIn2*LG_GlassCtrl.NumberIn3*cos((LG_GlassLook.NumberIn1-90)*pi/180), LG_GlassCtrl.NumberIn2 + LG_GlassLook.NumberIn2*LG_GlassCtrl.NumberIn3*sin((LG_GlassLook.NumberIn1-90)*pi/180)*comp:GetPrefs(\"Comp.FrameFormat.Width\")/comp:GetPrefs(\"Comp.FrameFormat.Height\"))", },
+						Gradient = Input { Value = Gradient { Colors = { [0] = { 0, 0, 0, 1 }, [1] = { 1, 1, 1, 1 } } }, },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1320, -231 } },
+				},
+				LG_RimArc = BitmapMask {
+					Inputs = {
+						Image = Input { SourceOp = "LG_RimGradient", Source = "Output", },
+						Channel = Input { Value = FuID { "Luminance" }, },
+						Invert = Input { Value = 1, },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1320, -198 } },
+				},
+				LG_RimOuter = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+						SoftEdge = Input { Value = 0.0003, },
+						PaintMode = Input { Value = FuID { "Multiply" }, },
+						EffectMask = Input { SourceOp = "LG_RimArc", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1320, -165 } },
+				},
+				LG_RimHole = RectangleMask {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Width = Input { Value = 0.35, Expression = "LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Height = Input { Value = 0.2828283, Expression = "LG_GlassCtrl.NumberIn5*LG_GlassCtrl.NumberIn3", },
+						CornerRadius = Input { Value = 1, Expression = "LG_GlassCtrl.NumberIn6", },
+						PaintMode = Input { Value = FuID { "Subtract" }, },
+						BorderWidth = Input { Value = -0.00156, Expression = "-LG_GlassLook.NumberIn3*LG_GlassCtrl.NumberIn3", },
+						EffectMask = Input { SourceOp = "LG_RimOuter", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1320, -132 } },
+				},
+				LG_ShadowDarken = BrightnessContrast {
+					Inputs = {
+						Gain = Input { Value = 0.7, },
+						Input = Input { SourceOp = "LG_GlassIn", Source = "Output", },
+						EffectMask = Input { SourceOp = "LG_ShadowMask", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 110, 0 } },
+				},
+				LG_GlassMagnify = Transform {
+					Inputs = {
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Pivot = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Size = Input { Value = 1.1, },
+						Input = Input { SourceOp = "LG_ShadowDarken", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 220, 0 } },
+				},
+				LG_GlassLens = Dent {
+					Inputs = {
+						Type = Input { Value = 5, },
+						Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(LG_GlassCtrl.NumberIn1, LG_GlassCtrl.NumberIn2)", },
+						Size = Input { Value = 0.35, Expression = "LG_GlassLook.NumberIn8*LG_GlassCtrl.NumberIn4*LG_GlassCtrl.NumberIn3", },
+						Strength = Input { Value = 0.3, },
+						Input = Input { SourceOp = "LG_GlassMagnify", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 330, 0 } },
+				},
+				LG_BodyHeight = Blur {
+					Inputs = {
+						XBlurSize = Input { Value = 25, },
+						Input = Input { SourceOp = "LG_GlassLens", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 330, 66 } },
+				},
+				LG_BodyNormal = CreateBumpMap {
+					Inputs = {
+						HeightScale = Input { Value = 3, },
+						Input = Input { SourceOp = "LG_BodyHeight", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 440, 66 } },
+				},
+				LG_BodyCenter = BrightnessContrast {
+					Inputs = {
+						Brightness = Input { Value = -0.5, },
+						Input = Input { SourceOp = "LG_BodyNormal", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 550, 66 } },
+				},
+				LG_BodyRefract = Displace {
+					Inputs = {
+						Type = Input { Value = 1, },
+						XRefraction = Input { Value = 0.006, },
+						YRefraction = Input { Value = 0.006, Expression = "XRefraction", },
+						LightPower = Input { Value = 0.5, },
+						LightAngle = Input { Value = 135, },
+						Input = Input { SourceOp = "LG_GlassLens", Source = "Output", },
+						Foreground = Input { SourceOp = "LG_BodyCenter", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 440, 0 } },
+				},
+				LG_BezelSrc = Background {
+					Inputs = {
+						UseFrameFormatSettings = Input { Value = 1, },
+						TopLeftRed = Input { Value = 1, },
+						TopLeftGreen = Input { Value = 1, },
+						TopLeftBlue = Input { Value = 1, },
+						TopLeftAlpha = Input { Value = 1, },
+						EffectMask = Input { SourceOp = "LG_PillMask", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 330, 132 } },
+				},
+				LG_BezelHeight = Blur {
+					Inputs = {
+						XBlurSize = Input { Value = 35, Expression = "LG_GlassCtrl.NumberIn7*LG_GlassCtrl.NumberIn3", },
+						Input = Input { SourceOp = "LG_BezelSrc", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 440, 132 } },
+				},
+				LG_BezelNormal = CreateBumpMap {
+					Inputs = {
+						WrapMode = Input { Value = FuID { "Clamp" }, },
+						HeightScale = Input { Value = 29.75, Expression = "0.85*LG_GlassCtrl.NumberIn7*LG_GlassCtrl.NumberIn3", },
+						Input = Input { SourceOp = "LG_BezelHeight", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 550, 132 } },
+				},
+				LG_BezelCenter = BrightnessContrast {
+					Inputs = {
+						Brightness = Input { Value = -0.5, },
+						Input = Input { SourceOp = "LG_BezelNormal", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 660, 132 } },
+				},
+				LG_RimRefract = Displace {
+					Inputs = {
+						Type = Input { Value = 1, },
+						XRefraction = Input { Value = 0.06, Expression = "LG_GlassCtrl.NumberIn8", },
+						YRefraction = Input { Value = 0.06, Expression = "LG_GlassCtrl.NumberIn8", },
+						Input = Input { SourceOp = "LG_BodyRefract", Source = "Output", },
+						Foreground = Input { SourceOp = "LG_BezelCenter", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 550, 0 } },
+				},
+				LG_GlassFrost = Blur {
+					Inputs = {
+						Filter = Input { Value = FuID { "Fast Gaussian" }, },
+						XBlurSize = Input { Value = 12, },
+						Input = Input { SourceOp = "LG_RimRefract", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 660, 0 } },
+				},
+				LG_GlassSat = BrightnessContrast {
+					Inputs = {
+						Saturation = Input { Value = 1.3, },
+						Input = Input { SourceOp = "LG_GlassFrost", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 770, 0 } },
+				},
+				LG_GlassGrain = FilmGrain {
+					Inputs = {
+						MasterStrength = Input { Value = 0.03, },
+						MasterXSize = Input { Value = 0.8, },
+						LogProcessing = Input { Value = 0, },
+						Input = Input { SourceOp = "LG_GlassSat", Source = "Output", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 880, 0 } },
+				},
+				LG_GlassComp = Merge {
+					Inputs = {
+						Background = Input { SourceOp = "LG_ShadowDarken", Source = "Output", },
+						Foreground = Input { SourceOp = "LG_GlassGrain", Source = "Output", },
+						PerformDepthMerge = Input { Value = 0, },
+						EffectMask = Input { SourceOp = "LG_PillMask", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 990, 33 } },
+				},
+				LG_GlassTintPlate = Background {
+					Inputs = {
+						UseFrameFormatSettings = Input { Value = 1, },
+						TopLeftRed = Input { Value = 1, },
+						TopLeftGreen = Input { Value = 1, },
+						TopLeftBlue = Input { Value = 1, },
+						TopLeftAlpha = Input { Value = 1, },
+						EffectMask = Input { SourceOp = "LG_PillMask", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1100, 66 } },
+				},
+				LG_GlassTint = Merge {
+					Inputs = {
+						Background = Input { SourceOp = "LG_GlassComp", Source = "Output", },
+						Foreground = Input { SourceOp = "LG_GlassTintPlate", Source = "Output", },
+						PerformDepthMerge = Input { Value = 0, },
+						Blend = Input { Value = 0.4, },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1100, 33 } },
+				},
+				LG_EdgeDarken = BrightnessContrast {
+					Inputs = {
+						Gain = Input { Value = 0.92, },
+						Input = Input { SourceOp = "LG_GlassTint", Source = "Output", },
+						EffectMask = Input { SourceOp = "LG_EdgeDarkHole", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1210, 33 } },
+				},
+				LG_RimLight = BrightnessContrast {
+					Inputs = {
+						Brightness = Input { Value = 0.6, },
+						Input = Input { SourceOp = "LG_EdgeDarken", Source = "Output", },
+						EffectMask = Input { SourceOp = "LG_RimHole", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1320, 33 } },
+				},
+				LG_RimBloom = SoftGlow {
+					Inputs = {
+						Threshold = Input { Value = 0.6, },
+						Gain = Input { Value = 1, },
+						XGlowSize = Input { Value = 8, },
+						Input = Input { SourceOp = "LG_RimLight", Source = "Output", },
+						GlowMask = Input { SourceOp = "LG_RimHole", Source = "Mask", },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1430, 33 } },
+				},
+				LG_GlassFade = Merge {
+					Inputs = {
+						Background = Input { SourceOp = "LG_GlassIn", Source = "Output", },
+						Foreground = Input { SourceOp = "LG_RimBloom", Source = "Output", },
+						PerformDepthMerge = Input { Value = 0, },
+						Blend = Input { Value = 1, },
+					},
+					ViewInfo = OperatorInfo { Pos = { 1540, 33 } },
+				},
+			},
+		},
+	},
+	ActiveTool = "LG_Glass",
+}

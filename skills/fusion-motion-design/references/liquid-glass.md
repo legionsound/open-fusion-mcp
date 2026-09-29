@@ -1,0 +1,9 @@
+# Fusion Liquid Glass: native node rig (port of ae-liquid-glass)
+
+Index. This reference is 75k chars, split into 3 parts so each fits one `fu_get_skill` call. Open the part that holds the section you need, or call `fu_get_skill` with `section: "<heading>"` on this file (the connector searches the parts). Parts keep the original headings and links.
+
+| Part | Size | Sections |
+|---|---|---|
+| [liquid-glass-1.md](liquid-glass-1.md) | 29k | 0. Target look (what "correct" is), unchanged from AE; 1. Fusion-native decisions (read this before building); 2. The rig, layer by layer (AE job -> Fusion nodes); Node graph (ascii); 3. Node order and why (order matters); 4. Units and conversions (AE 4K px -> Fusion); 5. Recipes; R1. Controller (`GlassCtrl`, `GlassLook`); R2. Panel geometry (`PillMask`); R3. Floor shadow (`ShadowMask` -> `ShadowDarken`); R4. Glass body chain (full frame); R5. Refraction band (bezel normal map -> `RimRefract`); R6. CC Glass stage (optional, default on, subtle); R7. Tint and edge darkness; R8. Rim lights (the two arcs); R9. Fade and output; R10. Alpha mode (glass from an existing element); R11. Auto-fit pill to a label (button variant helper); R12. Optional true-3D variant |
+| [liquid-glass-2.md](liquid-glass-2.md) | 31k | 6. Copy-ready Python (Resolve scripting API); 6.1 Build the rig on the current Fusion-page comp; 6.2 Animate the controller (entrance: rise + settle); 6.3 Verify render (three frames, PNG); 7. `.setting` (whole rig as one macro, paste route); 8. Variants (normalized, valid for 1920x1080 AND 3840x2160) |
+| [liquid-glass-3.md](liquid-glass-3.md) | 15k | 9. "Doesn't look right" checklist (symptom -> node -> fix); 10. Look levers (what to change per brief); 11. Finish the build: package, reconnect, verify (mandatory); 12. Don'ts and failure lessons; 13. NEEDS-LIVE-VERIFY (test plan for the next pass); 14. IDs used (all TSV-checked unless noted) |

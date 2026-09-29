@@ -1,0 +1,1069 @@
+{
+ "when": "2026-09-26 18:41:08",
+ "results": {
+  "fu_project_info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_version_info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_catalog": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_get_skill": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "fu_get_skill_asset": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "project.info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "page.get": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "timeline.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "timeline.create": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "timeline.set_current": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.set_current": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "page.open": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_context": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_comp_info": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "comp.format": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.set_format": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.set_time": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.set_render_range": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.add": {
+   "status": "pass",
+   "runs": 4,
+   "failures": []
+  },
+  "merge.add": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_tool_info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.rename": {
+   "status": "pass",
+   "runs": 3,
+   "failures": []
+  },
+  "tool.set_attrs": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "tool.select": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "tool.set_position": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.bounds": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "tool.duplicate": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "tool.delete": {
+   "status": "pass",
+   "runs": 6,
+   "failures": []
+  },
+  "input.set": {
+   "status": "pass",
+   "runs": 4,
+   "failures": []
+  },
+  "input.set_many": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.get": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.disconnect": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.connect": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "input.set_color": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.add_control": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "input.link": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "expression.clear": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "input.publish": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "modifier.remove": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "keyframe.add": {
+   "status": "pass",
+   "runs": 4,
+   "failures": []
+  },
+  "keyframe.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "audit.motion": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.set_easing": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.set_value": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.shift": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.set_loop": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.copy": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.remove": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "keyframe.clear": {
+   "status": "pass",
+   "runs": 3,
+   "failures": []
+  },
+  "modifier.add": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "modifier.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "modifier.remove_orphans": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "expression.set": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "expression.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "expression.replace_text": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "expression.disable_all": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "expression.restore_all": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "text.set_content": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "font.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "font.info": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "text.set_style": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "font.list_used": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "font.replace": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "text.add_follower": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "shape.add": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "shape.combine": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "shape.render": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "shape.modify": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "shape.set_trim": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "mask.add": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "mask.set_props": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "mask.add_polygon": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "merge.set_blend_mode": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "merge.set_matte": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "merge.stack": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "effect.add": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "effect.chain": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "effect.remove": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "effect.list_available": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "effect.inputs": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "transform.set": {
+   "status": "pass",
+   "runs": 3,
+   "failures": []
+  },
+  "3d.add_imageplane": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.add_shape": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.add_light": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.add_camera": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.add_merge": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.add_renderer": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "3d.scene": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "render.frame": {
+   "status": "pass",
+   "runs": 5,
+   "failures": []
+  },
+  "fu_render_frame": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "render.contact_sheet": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "render.compare": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "render.range": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "media.add_loader": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "media.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "media.replace": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "item.create_folder": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "item.import": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "item.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "item.usages": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "media.add_mediain": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "marker.add": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "marker.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "marker.update": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "marker.remove": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "setting.copy": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "setting.validate": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "setting.paste": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "builder.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.preview": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.camera_push_3d": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.cta_pill": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.effect_template": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.expression_template": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.liquid_glass": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.logo_reveal": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.lower_third": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.reveal_floor": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.stat_card": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.text_animator": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.title_card": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.transition": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "builder.ui_card": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "template.write_macro": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "template.install": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "template.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "viewer.view": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "viewer.get_state": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "command.list": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "command.find": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "command.execute": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "pref.get": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "pref.set": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "data.set": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "data.get": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "batch.run": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "comp.undo": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.redo": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.create": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "comp.rename": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.delete": {
+   "status": "pass",
+   "runs": 2,
+   "failures": []
+  },
+  "comp.export_file": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "comp.import_file": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "fu_comp_export": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.list_presets": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.set_format": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.add_job": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.list_jobs": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.status": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.start": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.stop": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.remove_job": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "deliver.save_preset": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "timeout.contract": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "timeline.delete": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "item.delete": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "item.delete_folder": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "project.save": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "policy.readonly": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "policy.categories": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "policy.project_allowlist": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "eval.python": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "eval.lua": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  },
+  "policy.eval_default_off": {
+   "status": "pass",
+   "runs": 1,
+   "failures": []
+  }
+ },
+ "log": [
+  "PASS fu_project_info ",
+  "PASS fu_version_info ",
+  "PASS fu_catalog ",
+  "PASS fu_get_skill ",
+  "PASS fu_get_skill ",
+  "PASS fu_get_skill_asset ",
+  "PASS project.info ",
+  "PASS page.get ",
+  "PASS timeline.list ",
+  "PASS timeline.create ",
+  "PASS timeline.set_current ",
+  "PASS comp.list ",
+  "PASS comp.set_current ",
+  "PASS page.open ",
+  "PASS fu_context ",
+  "PASS comp.info ",
+  "PASS fu_comp_info ",
+  "PASS comp.format ",
+  "PASS comp.set_format ",
+  "PASS comp.set_time ",
+  "PASS comp.set_render_range ",
+  "PASS tool.add ",
+  "PASS tool.add ",
+  "PASS tool.add (expected INVALID_ARGS)",
+  "PASS merge.add ",
+  "PASS tool.list ",
+  "PASS tool.info ",
+  "PASS fu_tool_info ",
+  "PASS tool.rename ",
+  "PASS tool.rename ",
+  "PASS tool.rename (expected invalid name)",
+  "PASS tool.set_attrs ",
+  "PASS tool.set_attrs ",
+  "PASS tool.select ",
+  "PASS tool.select ",
+  "PASS tool.set_position ",
+  "PASS tool.bounds ",
+  "PASS tool.bounds ",
+  "PASS tool.duplicate ",
+  "PASS tool.delete ",
+  "PASS input.set ",
+  "PASS input.set ",
+  "PASS input.set (expected option suggestion)",
+  "PASS input.set_many ",
+  "PASS input.get ",
+  "PASS input.list ",
+  "PASS input.disconnect ",
+  "PASS input.connect ",
+  "PASS input.connect (expected loop refusal)",
+  "PASS input.set_color ",
+  "PASS input.add_control ",
+  "PASS input.link ",
+  "PASS expression.clear ",
+  "PASS input.publish ",
+  "PASS modifier.remove ",
+  "PASS keyframe.add ",
+  "PASS keyframe.list ",
+  "PASS audit.motion ",
+  "PASS keyframe.set_easing ",
+  "PASS keyframe.set_value ",
+  "PASS keyframe.shift ",
+  "PASS keyframe.set_loop ",
+  "PASS keyframe.copy ",
+  "PASS keyframe.add ",
+  "PASS keyframe.remove ",
+  "PASS keyframe.clear ",
+  "PASS keyframe.add ",
+  "PASS keyframe.clear ",
+  "PASS modifier.add ",
+  "PASS modifier.add (expected: not a modifier)",
+  "PASS modifier.list ",
+  "PASS modifier.remove ",
+  "PASS modifier.remove_orphans ",
+  "PASS expression.set ",
+  "PASS expression.set (expected noise() refusal)",
+  "PASS expression.list ",
+  "PASS expression.replace_text ",
+  "PASS expression.disable_all ",
+  "PASS expression.restore_all ",
+  "PASS expression.clear ",
+  "PASS text.set_content ",
+  "PASS font.list ",
+  "PASS font.info ",
+  "PASS input.set (expected: animated input needs frame)",
+  "PASS keyframe.clear ",
+  "PASS text.set_style ",
+  "PASS text.set_style (expected font suggestion)",
+  "PASS font.list_used ",
+  "PASS font.replace ",
+  "PASS tool.add ",
+  "PASS text.add_follower ",
+  "PASS keyframe.add (follower opacity)",
+  "PASS text.set_content (expected: driven by follower)",
+  "PASS shape.add ",
+  "PASS shape.add ",
+  "PASS shape.combine ",
+  "PASS shape.combine ",
+  "PASS shape.render ",
+  "PASS shape.modify ",
+  "PASS shape.set_trim ",
+  "PASS mask.add ",
+  "PASS mask.add ",
+  "PASS mask.set_props ",
+  "PASS mask.add_polygon ",
+  "PASS tool.delete ",
+  "PASS merge.set_blend_mode ",
+  "PASS merge.set_blend_mode ",
+  "PASS merge.set_matte ",
+  "PASS merge.set_matte ",
+  "PASS merge.stack ",
+  "PASS effect.add ",
+  "PASS effect.chain ",
+  "PASS effect.remove ",
+  "PASS effect.list_available ",
+  "PASS effect.inputs ",
+  "PASS transform.set ",
+  "PASS transform.set ",
+  "PASS 3d.add_imageplane ",
+  "PASS 3d.add_shape ",
+  "PASS 3d.add_light ",
+  "PASS 3d.add_camera ",
+  "PASS 3d.add_merge ",
+  "PASS 3d.add_renderer ",
+  "PASS transform.set (3d)",
+  "PASS 3d.scene ",
+  "PASS render.frame (3d)",
+  "PASS render.frame ",
+  "PASS fu_render_frame ",
+  "PASS render.contact_sheet ",
+  "PASS render.compare ",
+  "PASS render.range ",
+  "PASS render.range (contiguous span)",
+  "PASS media.add_loader ",
+  "PASS media.list ",
+  "PASS media.replace ",
+  "PASS item.create_folder ",
+  "PASS item.import ",
+  "PASS item.list ",
+  "PASS item.usages ",
+  "PASS media.add_mediain ",
+  "PASS media.replace (MediaIn)",
+  "PASS render.frame (MediaIn from pool)",
+  "PASS tool.delete ",
+  "PASS marker.add ",
+  "PASS marker.list ",
+  "PASS marker.update ",
+  "PASS marker.remove ",
+  "PASS setting.copy ",
+  "PASS setting.validate ",
+  "PASS setting.paste ",
+  "PASS tool.delete ",
+  "PASS builder.list ",
+  "PASS builder.preview ",
+  "PASS builder.camera_push_3d ",
+  "PASS builder.cta_pill ",
+  "PASS builder.effect_template ",
+  "PASS builder.expression_template ",
+  "PASS builder.liquid_glass ",
+  "PASS builder.logo_reveal ",
+  "PASS builder.lower_third ",
+  "PASS builder.reveal_floor ",
+  "PASS builder.stat_card ",
+  "PASS builder.text_animator ",
+  "PASS builder.title_card ",
+  "PASS builder.transition ",
+  "PASS builder.ui_card ",
+  "PASS render.frame (after builders)",
+  "PASS template.write_macro ",
+  "PASS setting.paste (macro)",
+  "PASS render.frame (macro renders)",
+  "PASS tool.delete ",
+  "PASS template.install (scratch templates root)",
+  "PASS template.list ",
+  "PASS viewer.view ",
+  "PASS viewer.get_state ",
+  "PASS command.list ",
+  "PASS command.find ",
+  "PASS command.execute (Time_Goto_GlobalStart)",
+  "PASS pref.get ",
+  "PASS pref.set ",
+  "PASS pref.set (expected consent refusal)",
+  "PASS data.set ",
+  "PASS data.get ",
+  "PASS batch.run ",
+  "PASS comp.undo ",
+  "PASS comp.redo ",
+  "PASS batch.run (expected partial failure, no rollback)",
+  "PASS tool.delete ",
+  "PASS comp.create ",
+  "PASS comp.rename ",
+  "PASS comp.delete ",
+  "PASS comp.export_file ",
+  "PASS comp.import_file ",
+  "PASS comp.delete (imported)",
+  "PASS fu_comp_export ",
+  "PASS comp.create (new Fusion clip)",
+  "PASS deliver.list_presets ",
+  "PASS deliver.set_format (may vary by install)",
+  "PASS deliver.add_job ",
+  "PASS deliver.list_jobs ",
+  "PASS deliver.status ",
+  "PASS deliver.start ",
+  "PASS deliver.stop ",
+  "PASS deliver.remove_job ",
+  "PASS deliver.save_preset (expected consent refusal)",
+  "PASS timeout.contract ",
+  "PASS fu_comp_info (after worker restart)",
+  "PASS timeline.delete ",
+  "PASS item.delete ",
+  "PASS item.delete_folder ",
+  "PASS project.save ",
+  "PASS policy.readonly ",
+  "PASS policy.categories ",
+  "PASS policy.project_allowlist ",
+  "PASS eval.python ",
+  "PASS eval.lua ",
+  "PASS policy.eval_default_off (verified in offline tests: eval FORBIDDEN without FUSION_MCP_ENABLE_EVAL)"
+ ]
+}

@@ -1,0 +1,3 @@
+mcp>=1.20,<2
+pillow
+numpy

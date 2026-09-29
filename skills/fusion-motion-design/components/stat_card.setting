@@ -1,0 +1,301 @@
+{
+	Tools = ordered() {
+		SC_Ctrl = Custom {
+			Inputs = {
+				NameforNumber1 = Input { Value = "Reveal", },
+				NameforNumber2 = Input { Value = "Opacity", },
+				NameforNumber3 = Input { Value = "Exit", },
+				NumberIn1 = Input { SourceOp = "SC_CtrlNumberIn1", Source = "Value", },
+				NumberIn2 = Input { SourceOp = "SC_CtrlNumberIn2", Source = "Value", },
+				NumberIn4 = Input { SourceOp = "SC_CtrlNumberIn4", Source = "Value", },
+				NameforNumber4 = Input { Value = "Count", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, -99 } },
+		},
+		SC_CtrlNumberIn1 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[0] = { 0, RH = { 3.74, 0 } },
+				[17] = { 1, LH = { 4.25, 1 } },
+			},
+		},
+		SC_CtrlNumberIn2 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[5] = { 0, RH = { 5.66, 0 } },
+				[8] = { 1, LH = { 5.75, 1 } },
+			},
+		},
+		SC_CtrlNumberIn4 = BezierSpline {
+			SplineColor = { Red = 225, Green = 0, Blue = 225 }, NameSet = true,
+			KeyFrames = {
+				[7] = { 0, RH = { 16, 0.25 } },
+				[43] = { 1, LH = { 21.4, 1 } },
+			},
+		},
+		SC_BG = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0313725, },
+				TopLeftGreen = Input { Value = 0.0352941, },
+				TopLeftBlue = Input { Value = 0.0431373, },
+				TopLeftAlpha = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 0 } },
+		},
+		SC_Canvas = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 0, 66 } },
+		},
+		SC_ShadowM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.4907407 }, },
+				Width = Input { Value = 0.2083333, },
+				Height = Input { Value = 0.2037037, },
+				CornerRadius = Input { Value = 0.1454545, },
+				SoftEdge = Input { Value = 0.0125, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 99 } },
+		},
+		SC_Shadow = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0, },
+				TopLeftGreen = Input { Value = 0, },
+				TopLeftBlue = Input { Value = 0, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "SC_ShadowM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 132 } },
+		},
+		SC_ShadowMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_Canvas", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Shadow", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 0.35, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 110, 66 } },
+		},
+		SC_FillM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.2083333, },
+				Height = Input { Value = 0.2037037, },
+				CornerRadius = Input { Value = 0.1454545, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 99 } },
+		},
+		SC_Fill = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0745098, },
+				TopLeftGreen = Input { Value = 0.0784314, },
+				TopLeftBlue = Input { Value = 0.0941176, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "SC_FillM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 132 } },
+		},
+		SC_FillMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_ShadowMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Fill", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 220, 66 } },
+		},
+		SC_RingOuterM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.2083333, },
+				Height = Input { Value = 0.2037037, },
+				CornerRadius = Input { Value = 0.1454545, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 165 } },
+		},
+		SC_RingM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, },
+				Width = Input { Value = 0.2072917, },
+				Height = Input { Value = 0.2018519, },
+				CornerRadius = Input { Value = 0.1376147, },
+				PaintMode = Input { Value = FuID { "Subtract" }, },
+				EffectMask = Input { SourceOp = "SC_RingOuterM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 198 } },
+		},
+		SC_Ring = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.1490196, },
+				TopLeftGreen = Input { Value = 0.1568627, },
+				TopLeftBlue = Input { Value = 0.1803922, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "SC_RingM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 132 } },
+		},
+		SC_RingMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_FillMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Ring", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 330, 66 } },
+		},
+		SC_Label = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "REVENUE", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0123958, },
+				Red1 = Input { Value = 0.6313725, },
+				Green1 = Input { Value = 0.6313725, },
+				Blue1 = Input { Value = 0.6666667, },
+				Center = Input { Value = { 0.4104167, 0.5685185 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+				CharacterSpacing = Input { Value = 1.08, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 132 } },
+		},
+		SC_LabelMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_RingMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Label", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 440, 66 } },
+		},
+		SC_Number = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "$0", Expression = ":local s=string.format('%d', math.floor(SC_Ctrl:GetValue('NumberIn4', time)*1234 + 0.5)); local l,n,r=string.match(s,'^(.-%d)(%d*)(.*)'); return Text('$'..l..(n:reverse():gsub('%d%d%d','%0,'):reverse())..r..'')", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0495833, },
+				Red1 = Input { Value = 0.9803922, },
+				Green1 = Input { Value = 0.9803922, },
+				Blue1 = Input { Value = 0.9803922, },
+				Center = Input { Value = { 0.4104167, 0.5166667 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 132 } },
+		},
+		SC_NumberMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_LabelMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Number", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 550, 66 } },
+		},
+		SC_PillM = RectangleMask {
+			Inputs = {
+				Center = Input { Value = { 0.4297917, 0.437963 }, },
+				Width = Input { Value = 0.03875, },
+				Height = Input { Value = 0.0277778, },
+				CornerRadius = Input { Value = 1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 99 } },
+		},
+		SC_Pill = Background {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				TopLeftRed = Input { Value = 0.0627451, },
+				TopLeftGreen = Input { Value = 0.7254902, },
+				TopLeftBlue = Input { Value = 0.5058824, },
+				TopLeftAlpha = Input { Value = 1, },
+				EffectMask = Input { SourceOp = "SC_PillM", Source = "Mask", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 132 } },
+		},
+		SC_PillMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_NumberMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Pill", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 0.15, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 660, 66 } },
+		},
+		SC_Trend = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "+24.8%", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Bold", },
+				Size = Input { Value = 0.0123958, },
+				Red1 = Input { Value = 0.0627451, },
+				Green1 = Input { Value = 0.7254902, },
+				Blue1 = Input { Value = 0.5058824, },
+				Center = Input { Value = { 0.4166667, 0.437963 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 770, 132 } },
+		},
+		SC_TrendMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_PillMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Trend", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 770, 66 } },
+		},
+		SC_Caption = TextPlus {
+			Inputs = {
+				UseFrameFormatSettings = Input { Value = 1, },
+				StyledText = Input { Value = "vs last month", },
+				Font = Input { Value = "Open Sans", },
+				Style = Input { Value = "Regular", },
+				Size = Input { Value = 0.0123958, },
+				Red1 = Input { Value = 0.6313725, },
+				Green1 = Input { Value = 0.6313725, },
+				Blue1 = Input { Value = 0.6666667, },
+				Center = Input { Value = { 0.4554167, 0.437963 }, },
+				HorizontalJustificationNew = Input { Value = 3, },
+				HorizontalLeftCenterRight = Input { Value = -1, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 880, 132 } },
+		},
+		SC_CaptionMrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_TrendMrg", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Caption", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+			},
+			ViewInfo = OperatorInfo { Pos = { 880, 66 } },
+		},
+		SC_Xf = Transform {
+			Inputs = {
+				Center = Input { Value = { 0.5, 0.5 }, Expression = "Point(0.5, 0.5 - 0.0388889*(1 - SC_Ctrl:GetValue('NumberIn1', time - 0)))", },
+				MotionBlur = Input { Value = 1, },
+				Quality = Input { Value = 4, },
+				ShutterAngle = Input { Value = 180, },
+				Size = Input { Value = 1, Expression = "0.95 + 0.05*SC_Ctrl:GetValue('NumberIn1', time - 0)", },
+				Input = Input { SourceOp = "SC_CaptionMrg", Source = "Output", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 990, 33 } },
+		},
+		SC_Mrg = Merge {
+			Inputs = {
+				Background = Input { SourceOp = "SC_BG", Source = "Output", },
+				Foreground = Input { SourceOp = "SC_Xf", Source = "Output", },
+				PerformDepthMerge = Input { Value = 0, },
+				Blend = Input { Value = 1, Expression = "SC_Ctrl:GetValue('NumberIn2', time - 0)", },
+			},
+			ViewInfo = OperatorInfo { Pos = { 1100, 0 } },
+		},
+	},
+	ActiveTool = "SC_Mrg",
+}

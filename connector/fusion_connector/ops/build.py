@@ -1506,6 +1506,18 @@ def _stale_caches(ctx, p, ids):
     return out
 
 
+def start_failed(ids, jobs):
+    """StartRendering returned False: name what is known to cause it [live, explainer r12: a job added in the same script call
+    that loaded the project never started, and Render All did nothing; re-adding it in a new call and starting it in another worked]."""
+    found = [j.get("JobId") for j in jobs]
+    missing = [i for i in ids if i not in found]
+    return OpError("OPERATION_FAILED", "StartRendering returned False",
+                   hint=("Not in the render queue: %s (deliver.list_jobs). " % ", ".join(missing) if missing else "")
+                   + "Known cause: a job added in the same script call that loaded the project does not start (Render All does "
+                     "nothing either). Remove it (deliver.remove_job), add it again in a new call (deliver.add_job), then start it "
+                     "in another call.", details={"jobIds": ids, "found": found})
+
+
 @op("deliver.start", "Start rendering jobs named by jobIds (required; all: true starts every queued job). Refuses to overwrite an existing output file unless overwrite: true [2026-09-27: a bare start ran a stale queued job and overwrote a verified MP4]. Preflight: comps on the job's timeline whose connector renders measured 20+ s per frame are listed, and 60+ s refuses without confirm: true; a STALE disk cache (cache.*) on the timeline refuses without confirm: true [live, gapfix pass: stopping a Deliver stuck in one slow frame kept Resolve rendering ~8 min, then Resolve crashed]. wait: poll until done (bounded by the call timeout). While it renders, poll deliver.status; deliver.stop cancels between frames only in effect.",
     [P("jobIds", "array", "Job IDs to start (required unless all: true)."), P("all", "boolean", "Start every queued job."),
      P("overwrite", "boolean", "Allow jobs whose output file already exists."), P("wait", "boolean", "Block until finished."),
@@ -1546,7 +1558,7 @@ def deliver_start(ctx, a):
                       details={"staleCaches": stale})
     ok = p.StartRendering(ids) if ids else p.StartRendering()
     if not ok:
-        raise OpError("OPERATION_FAILED", "StartRendering returned False")
+        raise start_failed(ids, jobs)
     ctx.__dict__.setdefault("deliver_started", {}).update({j: time.time() for j in ids} or {"*": time.time()})
     if a.get("wait"):
         while p.IsRenderingInProgress():

@@ -3293,5 +3293,16 @@ class SceneCaseCollision(unittest.TestCase):
         self.assertIn("bg, ctrl, out and r3d", cm.exception.hint)
 
 
+class DeliverStartHint(unittest.TestCase):
+    def test_start_failure_names_the_known_cause(self):
+        from fusion_connector.ops.build import start_failed
+        e = start_failed(["j1", "j2"], [{"JobId": "j1"}])
+        self.assertEqual(e.code, "OPERATION_FAILED")
+        self.assertIn("Not in the render queue: j2", e.hint)
+        self.assertIn("same script call that loaded the project", e.hint)
+        self.assertEqual(e.details, {"jobIds": ["j1", "j2"], "found": ["j1"]})
+        self.assertNotIn("Not in the render queue", start_failed(["j1"], [{"JobId": "j1"}]).hint)
+
+
 if __name__ == "__main__":
     unittest.main()

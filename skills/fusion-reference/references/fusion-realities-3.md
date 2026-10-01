@@ -122,3 +122,25 @@ repository's `docs/results.md`.
     crisp. Put the change into a Transform with its own MotionBlur, held upstream at integer frames [live, sb3].
 24. **A BezierSpline whose keys carry `Value = Polyline { ... }`** (same point count per key) animates an sPolygon's
     `Polyline` through a paste (a tapered write-on rendered live) [live, sb3].
+
+### Deliver at film scale [live, explainer r12, 2026-09-29/30]
+25. **Check renders do not predict Deliver time.** The connector's final `render.frame` (a `comp.Render` that does
+    not set `HiQ`) took 2.5-3 s on S4's glass frames, while Resolve's render cache and Deliver took 30-45 s a frame in
+    the same session. Most of that session's slowdown was memory pressure (§16: a 34 GB footprint on a 32 GB Mac);
+    how much `HiQ` adds is unmeasured. Before promising a Deliver time, Deliver 10-30 frames of the heaviest scene in
+    a fresh session.
+26. **Resolve's render cache and "Use render cached images".** A Deliver with "Use render cached images" takes the
+    cached frames one by one (1,050 cached frames went through in about 2 minutes) and renders the rest live, so
+    caching the scenes where the cache keeps pace and then running one Deliver works. Changing the project's
+    render-cache codec (apch to apcn) wiped the whole cache. In that session the cache kept pace on light scenes but
+    ran 8-10x slower than Deliver on a heavy 3D graph (~40 s vs ~4.9 s a frame), probably because it frees Fusion's
+    memory every frame and redraws frozen cards; the session was also under memory pressure, so time it fresh.
+27. **A stopped Deliver leaves a ragged tail.** A partial H.265 from a stopped job ended mid mini-GOP: display frames
+    0-1209, 1211 and 1213 (1210 and 1212 missing), and a stream-copy concat with the re-rendered rest put timestamps
+    out of order at the join. Keep only the contiguous head (`-c copy -frames:v N` keeps the first N packets in
+    decode order, so check the timestamps run 0 to N-1), re-render from frame N, and never mux the audio with
+    `-shortest` (it cut 3 video frames). Stopping a Deliver under memory pressure took 10-13 minutes to wind down;
+    the partial file still closed cleanly.
+28. **`StartRendering` returns False for a job added in the same script call that loaded the project**, and
+    "Render All" did nothing. Removing the job, adding it again in a new call and starting it in another call
+    worked. `deliver.start` points this out when StartRendering fails.

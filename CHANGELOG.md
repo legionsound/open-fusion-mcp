@@ -56,7 +56,13 @@ found while building a 9:16 version of the explainer film.
 - Every `INVALID_ARGS` reply lists the operation's expected parameters, with allowed values and defaults (#13):
   schema errors did already; now errors raised inside an operation, ID checks and failed batch children do too,
   and the hint points at `details.expected` instead of a catalog lookup.
-- 181 operations in 36 categories. The offline suite has 234 tests, and CI runs all five test modules.
+- When `StartRendering` fails, `deliver.start` names the job IDs missing from the render queue and the known cause
+  seen live: a job added in the same script call that loaded the project does not start until it is added again
+  in a new call.
+- The Fusion realities reference gained the render-night findings: check renders do not predict Deliver time,
+  how Resolve's render cache and "Use render cached images" behave, and how to keep the clean part of a stopped
+  Deliver.
+- 181 operations in 36 categories. The offline suite has 235 tests, and CI runs all five test modules.
 
 ### Fixed
 

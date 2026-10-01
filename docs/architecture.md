@@ -184,7 +184,7 @@ Resolve, except for the live check in the project named `Testbed` with `FUSION_M
 ## Tests
 
 - `tests/test_offline.py`, `tests/test_layout.py`, `tests/test_catalog_tools.py`, `tests/test_receipts.py`,
-  `tests/test_diagnostics.py`: 234 offline unit tests (no Resolve). `test_receipts.py` drives the real server
+  `tests/test_diagnostics.py`: 235 offline unit tests (no Resolve). `test_receipts.py` drives the real server
   and a spawned worker through the fake Resolve's faults: receipts on `TIMEOUT` and `TRANSPORT`, recover,
   rollback with and without `keep`, the refusals after later changes and after a first rollback, atomic
   batches, the evidence rule with empty undo groups kept or dropped, resume (a plain retry duplicates the

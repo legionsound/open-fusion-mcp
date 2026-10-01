@@ -54,10 +54,10 @@ user to quit it and reopen Resolve.
    changes only): use it when half a batch is worse than none. `snapshot: "names"` (up to 1,500 tools) lets
    recovery list added tools. Paste-based ops (setting.paste, builder.*, mask.add_polygon, tool.duplicate)
    need the comp showing on the Fusion page: pass `comp: {timeline, item}` or call `comp.set_current`.
-4. Verify by looking: `fu_render_frame` returns the preview inline; `fu_contact_sheet` shows a
-   whole motion in one grid; `timeline.grab_frame` (not in the build loop: it switches to the Edit page and
-   back, ~2 s) only when you need the cut's color-managed timeline output; `render.compare` (optional: a supplied reference, or version-to-version regression) scores a
-   frame (MAE, PSNR, SSIM, diff panel); `audit.motion` checks timing, easing and stagger numerically. Fix what you see.
+4. Verify by looking: `fu_render_frame` returns the preview inline; `fu_contact_sheet` shows a whole motion in
+   one grid; `timeline.grab_frame` (switches to the Edit page and back, ~2 s: not in the build loop) only for the
+   cut's color-managed output; `render.compare` (against a reference or an earlier version) scores a frame (MAE,
+   PSNR, SSIM, diff panel); `audit.motion` checks timing, easing and stagger numerically. Fix what you see.
    Renders cannot show node wiring or Inspector state: for those take a computer-use screenshot of
    the Resolve window (Fusion page node editor / Inspector; `viewer.view` puts a tool in the viewer).
 5. `TIMEOUT`/`TRANSPORT` = uncertain completion; never blindly retry. Read `details.receipt`, run
@@ -80,7 +80,7 @@ user to quit it and reopen Resolve.
 | Generated op lists | `batch.run {path: "/abs/ops.json"}`; children's previews come back with the batch |
 | One CTRL across per-beat comps | `controller.sync {timeline, tool: "CTRL"}` after editing one copy |
 | Memory before big pastes/renders | `system.memory` (also in `fu_context` and render results); `system.purge_cache` frees Fusion's render cache (about 1 GB after 30 heavy frames; most of Resolve's footprint is not that cache); above the warning, save and ask the user before restarting Resolve |
-| Deliver progress / stop | `deliver.start` refuses a timeline whose comps measured 60+ s/frame (confirm to override); `deliver.status` works during the render (percent, ETA, approx frame, s/frame, seconds without a frame); `deliver.stop` sends one stop and waits. Never stop a heavy job mid-frame: a stuck CPU-heavy frame kept rendering ~8 min after the stop and Resolve crashed |
+| Deliver progress / stop | `deliver.start` refuses comps measured at 60+ s/frame (confirm overrides); `deliver.status` works mid-render (percent, ETA, frame, s/frame, seconds since a frame); `deliver.stop` sends one stop and waits. Never stop a heavy job mid-frame: a stuck frame kept rendering ~8 min after the stop, then Resolve crashed. Check renders do not predict Deliver time (fusion-realities §17 item 25) |
 | Whole film in one comp (faster than one comp per beat, same pixels) | one item as long as the film; each scene's output enters through a Merge trimmed to its frames (`scene.build {film: true}`, or `SetAttrs({"TOOLNT_EnabledRegion_Start": {1: a}, "TOOLNT_EnabledRegion_End": {1: b}})` via run_script; the connector has no region op yet) [live, efficiency lab] |
 | Draft check renders for a hand-built comp | `render.frame` / `render.range` / `render.contact_sheet` / `render.compare` with `quality: "draft"` (HiQ and motion blur off): 3-7x faster, layout exact; `quality: "final"` to judge the look (the scene builder's `CTRL.Draft` covers its own scenes) [live, efficiency lab] |
 | Check a culled comp for the black-frame trap | `comp.lint_regions`: flags a trimmed tool feeding a non-mask input that is active outside the trim, and overlapping FILM_ regions, with the fix |
@@ -115,12 +115,10 @@ skip): `comp.Render` in Resolve also renders MediaOut1's chain. Render results n
 | `FUSION_MCP_MAX_RESPONSE_CHARS=40000` | response size budget; larger responses spill to `out/responses/` with a preview |
 | `FUSION_MCP_MEMORY_WARN_GB` | Resolve footprint that triggers the restart advice (default 60 % of RAM) |
 
-Every `comp.Render` in Resolve 21.1 raises a modal dialog that blocks scripting: "Render completed!"
-on success, "WARNING! Render did not complete!" when the source tool produced nothing. The connector
-clicks OK on these two only, through System Events (needs Accessibility permission for the process
-that runs the server, the MCP client app). A failed render returns `RENDER_FAILED` with the dialog
-text; check the source tool (`fu_tool_info`, `viewer.view`) rather than retrying. With the switch
-off, close the dialog yourself after each render.
+Every `comp.Render` in Resolve 21.1 raises a modal that blocks scripting ("Render completed!", or "WARNING! Render
+did not complete!" when the source tool produced nothing). The connector clicks OK on those two only, via System
+Events (Accessibility permission for the MCP client app). `RENDER_FAILED` carries the dialog text: check the source
+tool (`fu_tool_info`, `viewer.view`) instead of retrying. With the switch off, close the dialog yourself.
 
 ## Scene builder: one description in, one native graph out
 
@@ -282,7 +280,7 @@ align target moves every affected layer; retiming an enter preset rewrites only 
 |---|---|---|---|---|
 | showcase (title + 3D card + camera push + cursor) | 1 | 58 | 2.5-5.8 s (0.9-1.0 s) | restyle+retime update 2.5 s; quality flip 52 ms (one set) |
 | title sequence / feature card / 3D push | 1 each | 45 / 56 / 54 | 2.0-8.1 s (0.6-1.1 s) | contact sheets match the offline previews |
-| Benchmark S2 (from its spec) | 1 | 196 (rebuild 198) | 6-9.5 s (2.3 s; the rebuild comp pasted in 6.8 s) | vs the rebuild's S2 Delivered in the same session: MAE median 1.0, max 1.35 (first build: SSIM min 0.980); vs the v002 MP4 f96/f116: MAE 2.49/1.63 |
+| Benchmark S2 (from its spec) | 1 | 196 (rebuild 198) | 6-9.5 s (2.3 s; the rebuild comp pasted in 6.8 s) | vs the hand rebuild's S2 Deliver: MAE median 1.0, max 1.35 |
 - Deliver S2 (72 frames): draft 0.045 s/frame; final 0.67-0.74 s/frame vs the rebuild comp 0.62-0.75 in the same
   session.
 - Scene builder pass 3 (28 live checks): paste and in-place updates no longer grow with comp size (50 tools 0.27 / 0.31 /
@@ -338,11 +336,7 @@ else the comp render range:
 - **Out-of-range warning:** a consumer that can request frames outside the range is named in `warnings`,
   because the Loader has no image there.
 
-Check what is cached and what is stale:
-
-```json
-{"operation": "cache.status", "args": {}}
-```
+Check what is cached and what is stale with `cache.status {}`:
 
 - **Reply:** per cache: range, frames on disk, bytes, created or refreshed, `stale`, and `changed` (the
   upstream tools whose settings, keys, expressions or wiring differ). Node moves and other UI state do not
@@ -350,26 +344,11 @@ Check what is cached and what is stale:
 - **Also warned by:** `render.frame/range/contact_sheet/compare` (under `warnings`) and `deliver.start`, which
   refuses without `confirm: true`.
 
-Re-render stale caches (a new file revision; the old one is deleted), or one cache or all:
-
-```json
-{"operation": "cache.refresh", "args": {}}
-{"operation": "cache.refresh", "args": {"tool": "S5_Window_Shd"}}
-```
-
-Put the live branch back (consumers of the Loader rewired to the tool, Loader deleted), optionally deleting
-the files:
-
-```json
-{"operation": "cache.restore", "args": {"tool": "S5_Window_Shd", "clear": true}}
-```
-
-Delete cache files, only ever inside the cache root. `tool` is a restored cache's folder (`restore: true` for
-an active one); `all: true` deletes every unused cache folder of this comp:
-
-```json
-{"operation": "cache.clear", "args": {"all": true}}
-```
+- `cache.refresh {}` re-renders every stale cache (`{tool}` for one); a new file revision replaces the old.
+- `cache.restore {tool, clear: true}` puts the live branch back (the Loader's consumers rewired to the tool,
+  the Loader deleted); `clear` also deletes the files.
+- `cache.clear` deletes cache files, only ever inside the cache root: `{tool}` for a restored cache's folder
+  (`restore: true` for an active one), `{all: true}` for every unused cache folder of this comp.
 
 ## Graph layout (`comp.layout`)
 
@@ -398,9 +377,6 @@ The house graph style (spine, layer columns, labeled backdrops) is in fusion-mot
 
 ## 5. Beside the connector
 
-The official DaVinci Resolve MCP covers the whole Resolve API (Edit, Color, Fairlight, Media Pool,
-Deliver, anything the catalog lacks) and one `run_script` can beat many `fu_do` calls; computer
-use sees and touches what no API reaches. Use them whenever they are the quicker or safer route,
-not only when the catalog has no op. A `run_script` pattern that keeps recurring is a candidate
-connector op: note it for the connector's next pass. The community server (`davinci-resolve`)
-adds guarded Fusion helpers and offline `.comp` authoring.
+See the top of this skill: one `run_script` can beat many `fu_do` calls. A `run_script` pattern that keeps
+recurring is a candidate connector op: note it for the connector's next pass. The community server
+(`davinci-resolve`) adds guarded Fusion helpers and offline `.comp` authoring.

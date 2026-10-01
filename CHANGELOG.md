@@ -6,8 +6,8 @@ All notable changes to this project are listed here. The format follows
 
 ## [0.2.0] - 2026-10-01
 
-Reliability release. Issues #1 to #5 came from feedback on the r/mcp launch thread; #6 to #11 were found while
-building a 9:16 version of the explainer film.
+Reliability release. Issues #1 to #5, #13 and #14 came from feedback on the r/mcp launch thread; #6 to #11 were
+found while building a 9:16 version of the explainer film.
 
 ### Added
 
@@ -28,6 +28,11 @@ building a 9:16 version of the explainer film.
   the comp against a names snapshot) and `snapshot: "count" | "names"`. Steps that one comp undo cannot revert,
   such as timeline, project and Deliver operations, and steps that failed validation are refused before the
   batch starts. The undo follows the same evidence rule as `batch.rollback`.
+- Resume (#14): `batch.run` takes `resume: <callId>` to finish a batch whose reply was lost. The same ops are sent
+  again; the steps that finished are skipped (their arguments must match the journal's fingerprints), a step that
+  may have partly applied runs again only when none of its target tools exist (`uncertain: "check" | "skip" |
+  "rerun"`), the dead worker's undo group is closed, and the comp is read back: every intended tool exists and
+  none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title_1).
 - Fault-injection tests (#3). `fusion_connector/testkit.py` is a file-backed fake Resolve whose state survives a
   killed worker, with test-only operations that hang, crash the worker or fail after a partial change; it is
   inert unless the test environment variables are set. `tests/test_receipts.py` drives the real server and
@@ -48,7 +53,10 @@ building a 9:16 version of the explainer film.
   searches names and descriptions (`query`, optionally narrowed by `category`). Unknown arguments are rejected
   with a suggestion instead of being ignored.
 - `batch.run` children accept `{op, args}` as well as `{operation, args}` (#4).
-- 181 operations in 36 categories. The offline suite has 224 tests, and CI runs all five test modules.
+- Every `INVALID_ARGS` reply lists the operation's expected parameters, with allowed values and defaults (#13):
+  schema errors did already; now errors raised inside an operation, ID checks and failed batch children do too,
+  and the hint points at `details.expected` instead of a catalog lookup.
+- 181 operations in 36 categories. The offline suite has 233 tests, and CI runs all five test modules.
 
 ### Fixed
 

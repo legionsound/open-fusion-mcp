@@ -62,7 +62,8 @@ user to quit it and reopen Resolve.
    the Resolve window (Fusion page node editor / Inspector; `viewer.view` puts a tool in the viewer).
 5. `TIMEOUT`/`TRANSPORT` = uncertain completion; never blindly retry. Read `details.receipt`, run
    `batch.recover {callId}`, then BEFORE any other change `batch.rollback {callId}` (`keep: true` keeps the
-   changes; with no sign of a change it undoes nothing and says why); then re-run from the first unfinished step. `comp.undo` reverts one call. A timed-out render may
+   changes; with no sign of a change it undoes nothing and says why) or finish the batch: same ops with
+   `resume: callId` (skips finished steps, never duplicates). `comp.undo` reverts one call. A timed-out render may
    still run and leave its temp Saver: `render.cancel`.
 
 ## 2b. Film-scale work (ops added after the benchmark ad rebuild)

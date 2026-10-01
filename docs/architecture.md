@@ -25,7 +25,9 @@ MCP client (agent) --stdio--> server (policy, validation, skills, envelopes, rec
   the current policy allows, and it rejects unknown arguments with a suggestion.
 - Before anything reaches Resolve, the server validates arguments against the operation's schema (types,
   enums, unknown keys with spelling suggestions) and checks registry IDs, input IDs and option strings against
-  the harvested tables in `skills/fusion-reference/data/`.
+  the harvested tables in `skills/fusion-reference/data/`. Every `INVALID_ARGS` reply, from these checks, from
+  inside the operation or from a failed batch child, lists the operation's parameters in `details.expected`
+  (type, required, allowed values, default), so the agent can fix the call without a catalog lookup.
 - Policy (read-only mode, category allowlist, project allowlist, eval and template-install opt-ins) is checked
   in the server and shipped to the worker with every call ([install.md](install.md#6-policy-switches)).
 - Replies are compact envelopes (`ok`, `result` or `error {code, message, hint}`). Replies over the response
@@ -69,8 +71,9 @@ them on disk.
   `<out>/journal/<callId>.jsonl` as it runs: one JSON line per event, flushed and fsynced so it survives a kill.
   The lines are a header (operation, target comp, a batch's child operations), the comp snapshot before the
   first change, the undo group opening and closing, each step's start (with the tool names its arguments point
-  at) and end (`ok` with what its result reports it changed, or the error), an atomic rollback, and `done`. The
-  newest 200 journals are kept. A journal that cannot be written never fails the call.
+  at) and end (`ok` with what its result reports it changed, or the error), an atomic rollback, and `done`. A
+  batch's header also holds a short hash of each step's arguments, and a resumed batch logs the steps it skipped.
+  The newest 200 journals are kept. A journal that cannot be written never fails the call.
 - Batches take the snapshot: the tool count, plus every tool name with `snapshot: "names"` or `atomic: true`
   when the comp holds at most `FUSION_MCP_SNAPSHOT_LIMIT` tools (default 1,500; names cost one call per tool).
   A single operation's journal has no snapshot, so recovery can check the uncertain step's target tools but
@@ -96,6 +99,15 @@ them on disk.
   change targeted the same comp; `force: true` overrides. It cannot see changes made outside the connector (the
   official Resolve MCP, a person working in Fusion), so recovery comes before anything else touches the comp. A
   call that never opened an undo group has nothing to undo.
+- `batch.run {ops, resume: callId}` finishes an unfinished batch instead. The caller sends the same ops: the
+  connector checks the operation names and the argument hashes of the finished steps against the journal, skips
+  those steps, and runs the rest. A step that was running, or failed, may have partly applied: by default
+  (`uncertain: "check"`) it runs again only when none of its target tools exist, otherwise the call stops with
+  `CONFLICT` so the agent can inspect and choose `skip` or `rerun`. The dead worker's undo group is closed first,
+  so the resumed part is its own undo event. Afterwards the comp is read back: every tool the batch meant to
+  create exists, and no new tool is a renamed copy of one (Fusion names a repeated tool `Title_1` instead of
+  failing, which is what a plain retry of the whole batch would cause). A call is resumed once; resume and
+  `atomic` do not combine.
 - Rollback undoes only with evidence that the call changed something: a step that finished, or a comp that
   differs from the snapshot. An undo group that recorded no change may not be an undo event, and one `Undo`
   after it would revert an earlier, unrelated change. Without that evidence it closes the group, undoes nothing
@@ -170,10 +182,11 @@ Resolve, except for the live check in the project named `Testbed` with `FUSION_M
 ## Tests
 
 - `tests/test_offline.py`, `tests/test_layout.py`, `tests/test_catalog_tools.py`, `tests/test_receipts.py`,
-  `tests/test_diagnostics.py`: 224 offline unit tests (no Resolve). `test_receipts.py` drives the real server
+  `tests/test_diagnostics.py`: 233 offline unit tests (no Resolve). `test_receipts.py` drives the real server
   and a spawned worker through the fake Resolve's faults: receipts on `TIMEOUT` and `TRANSPORT`, recover,
   rollback with and without `keep`, the refusals after later changes and after a first rollback, atomic
-  batches, and the evidence rule with empty undo groups kept or dropped. Tests that need the
+  batches, the evidence rule with empty undo groups kept or dropped, resume (a plain retry duplicates the
+  finished steps, a resumed one does not) and the expected parameters on errors. Tests that need the
   private benchmark fixture, the LuaJIT inside Resolve.app, or the harvested data tables skip themselves with a
   reason when those are missing.
 - `tests/smoke.py`, `tests/cache_live.py`, `tests/layout_live.py`, `tests/sb3_live.py`, `tests/receipts_live.py`:

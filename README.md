@@ -54,8 +54,9 @@ template: the titles, shapes, cards, cameras and node-graph visuals are Fusion t
   clear refusals instead of half-applied edits.
 - **Recovery after a timeout.** The worker journals each operation step by step, so the reply to a timeout or
   a dead worker carries a receipt: what finished, what was running and what never started. `batch.recover`
-  re-reads the comp, `batch.rollback` undoes the call and verifies the result, and `atomic: true` makes a batch
-  all or nothing. Fault-injection tests against a fake Resolve cover these paths.
+  re-reads the comp, `batch.rollback` undoes the call and verifies the result, `resume` finishes the batch
+  without repeating a step, and `atomic: true` makes a batch all or nothing. Fault-injection tests against a fake
+  Resolve cover these paths.
 - **Craft skills.** A motion-design procedure and router, a distilled Fusion 21.1 reference and a
   Figma-to-Fusion transfer, written for agents and served by the MCP server itself.
 

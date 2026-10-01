@@ -14,11 +14,9 @@ real Fusion node graphs: editable titles, kinetic type, UI animation and whole m
 ![MCP](https://img.shields.io/badge/MCP-server-6e56cf.svg)
 ![macOS](https://img.shields.io/badge/tested%20on-macOS-555.svg)
 
-<a href="docs/media/open-fusion-mcp-explainer.mp4">
-  <img src="docs/media/open-fusion-mcp-explainer-poster.jpg" alt="Every frame you just watched was built by an agent in Fusion" width="880">
-</a>
+https://github.com/user-attachments/assets/c0c83852-3371-4a8f-9411-3cb59df8130c
 
-**[▶ Watch the 60-second film](docs/media/open-fusion-mcp-explainer.mp4)** · every frame built by an agent in Fusion
+*Every frame of this film was built by an agent in Fusion, as one editable comp.*
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [What's inside](#whats-inside) · [Results](#measured-results) · [Docs](#documentation)
 

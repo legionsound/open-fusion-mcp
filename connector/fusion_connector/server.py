@@ -173,7 +173,7 @@ def with_receipt(res, msg):
     res["message"] += ". " + rec["summary"]
     res["hint"] = ("Before any other change, once Resolve answers: fu_do batch.recover {callId: '%s'} re-reads the comp and checks the "
                    "uncertain step against the journal; batch.rollback {callId} undoes the call's undo group and verifies the comp "
-                   "(keep: true only closes an open group). Then re-run from the first unfinished step. " % cid) + res.get("hint", "")
+                   "(keep: true only closes an open group). To finish a batch instead, send the same ops with resume: '%s'. " % (cid, cid)) + res.get("hint", "")
     return res
 
 
@@ -240,12 +240,13 @@ def gate(name, args, nested=False):
     good, v = validate(op, args)
     if not good:
         return None, None, {"code": "INVALID_ARGS", "message": f"invalid arguments for '{name}': " + "; ".join(f"{i['path']} - {i['message']}" for i in v),
-                            "hint": f"fu_catalog({{operation: '{name}'}}) has the full parameter reference.",
+                            "hint": EXPECTED_HINT % name,
                             "details": {"issues": v, "expected": summarize(op.params)}}
     tsv_err = _tsv_check(op, v)
     if tsv_err:
         return None, None, {"code": "INVALID_ARGS", "message": f"invalid arguments for '{name}': {tsv_err}",
-                            "hint": "IDs come from the live-harvested registry (effect.list_available / effect.inputs)."}
+                            "hint": "IDs come from the live-harvested registry (effect.list_available / effect.inputs).",
+                            "details": {"expected": summarize(op.params)}}
     if op.consent and v.get("confirm") is not True:
         return None, None, {"code": "FORBIDDEN", "message": f"'{name}' changes state beyond the comp and runs only with confirm: true",
                             "hint": "Pass confirm: true only when the user explicitly asked for this."}
@@ -343,7 +344,30 @@ async def do(args):
             return err_result(x.code, x.message, x.hint, x.details)
         except Exception as x:  # noqa
             return err_result("OPERATION_FAILED", f"{type(x).__name__}: {x}")
-    return await worker_call({"kind": "op", "name": name, "args": v, "ambient": True}, timeout_ms)
+    msg = {"kind": "op", "name": name, "args": v, "ambient": True, "policy": config.policy()}
+    res = await asyncio.to_thread(BRIDGE.call, msg, timeout_ms / 1000.0)
+    return from_worker(expect(res, op))
+
+
+EXPECTED_HINT = "details.expected lists every parameter, so fix the call and retry; fu_catalog({operation: '%s'}) has the full reference."
+
+
+def expect(res, op):
+    """[issue #13] Every INVALID_ARGS reply carries the operation's parameter list (failed batch children too), so a retry is one step."""
+    if res.get("ok"):
+        return res
+    d = res.get("details")
+    if res.get("code") == "INVALID_ARGS" and not (isinstance(d, dict) and "expected" in d):
+        res = dict(res, details=dict(d if isinstance(d, dict) else ({} if d is None else {"info": d}), expected=summarize(op.params)))
+        res["hint"] = (res.get("hint") + " " if res.get("hint") else "") + EXPECTED_HINT % op.name
+    d = res.get("details")
+    for r in (d.get("results") or []) if op.name == "batch.run" and isinstance(d, dict) else []:
+        e, co = r.get("error") or {}, ops().get(r.get("operation") or "")
+        if r.get("ok") is False and e.get("code") == "INVALID_ARGS" and co is not None:
+            ed = e.get("details")
+            if not (isinstance(ed, dict) and "expected" in ed):
+                e["details"] = dict(ed if isinstance(ed, dict) else ({} if ed is None else {"info": ed}), expected=summarize(co.params))
+    return res
 
 
 CATALOG = Op("fu_catalog", "catalog", "fu_catalog arguments", [

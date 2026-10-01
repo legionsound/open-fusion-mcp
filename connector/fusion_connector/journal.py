@@ -2,13 +2,16 @@
 worker dies, the server can still say which steps finished, which one was running and which never started [issue #1].
 
 Files: <out>/journal/<callId>.jsonl, newest KEEP kept. Lines:
-  {"t": "call", "id", "op", "comp", "children": [op names], "at"}     header
+  {"t": "call", "id", "op", "comp", "children": [op names], "argsHash": [per child], "resumes": callId, "at"}   header
   {"t": "snapshot", "tools": count, "names": [...] | absent}          comp state before the call's first change
   {"t": "undo", "state": "open" | "closed"}                           the call's undo group
   {"t": "start", "i", "op", "targets": [...]}                         a step began
   {"t": "end", "i", "ok", "changed": {...} | "error": {...}}          a step finished
-  {"t": "rollback", ...}                                              an atomic batch undid itself
+  {"t": "skip", "i", "reason"}                                       a resumed batch skipped a step that already ran
+  {"t": "rollback", ...}                                              an atomic batch undid itself (or batch.rollback, "by")
+  {"t": "resumed", "by"}                                              appended when batch.run resume picked the call up
   {"t": "done", "ok"}                                                 the call returned normally"""
+import hashlib
 import json
 import os
 import time
@@ -34,6 +37,11 @@ def path_of(call_id):
 
 def new_id():
     return time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:8]
+
+
+def args_hash(args):
+    """Fingerprint of one step's arguments: a resumed batch must send the finished steps unchanged [issue #14]."""
+    return hashlib.sha1(json.dumps(args, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
 def _strings(v, out, limit=20):
@@ -78,12 +86,20 @@ def changes_of(result):
 class Journal:
     """Worker side. Every write is flushed and fsynced: the server reads the file after killing the worker."""
 
-    def __init__(self, call_id, op, comp=None, children=None):
+    def __init__(self, call_id, op, comp=None, children=None, hashes=None, resumes=None):
         self.id = call_id
         self.path = path_of(call_id)
         _prune()
         self.f = open(self.path, "a", encoding="utf-8")
-        self.write({"t": "call", "id": call_id, "op": op, "comp": comp, "children": children, "pid": os.getpid()})
+        head = {"t": "call", "id": call_id, "op": op, "comp": comp, "children": children, "pid": os.getpid()}
+        if hashes is not None:
+            head["argsHash"] = hashes
+        if resumes:
+            head["resumes"] = resumes
+        self.write(head)
+
+    def skip(self, i, reason):
+        self.write({"t": "skip", "i": i, "reason": reason})
 
     def write(self, rec):
         rec = dict(rec, at=round(time.time(), 3))
@@ -214,12 +230,17 @@ def reconcile(lines):
     completed = [s for s in steps.values() if s.get("ok") is True]
     failed = [s for s in steps.values() if s.get("ok") is False]
     running = [s for s in steps.values() if "ok" not in s]
-    not_started = [i for i in range(len(children)) if i not in steps]
+    skipped = sorted({r["i"] for r in lines if r.get("t") == "skip"})
+    not_started = [i for i in range(len(children)) if i not in steps and i not in skipped]
     rec = {"callId": head.get("id"), "operation": head.get("op"), "comp": head.get("comp"), "steps": len(children),
            "completed": [{k: s[k] for k in ("index", "operation", "changed") if k in s} for s in completed],
            "failed": [{k: s[k] for k in ("index", "operation", "error") if k in s} for s in failed],
            "uncertain": [{k: s[k] for k in ("index", "operation", "targets") if k in s} for s in running],
            "notStarted": not_started, "undoGroup": undo or "none", "finished": done is not None}
+    if skipped:
+        rec["skipped"] = skipped
+    if head.get("resumes"):
+        rec["resumes"] = head["resumes"]
     if snap:
         rec["snapshot"] = {k: v for k, v in snap.items() if k != "names"} | ({"names": len(snap["names"])} if "names" in snap else {})
     if rollback:
@@ -239,6 +260,8 @@ def summary(rec, batch):
             return "%s%s started and never reported back: it may have partly applied." % (u["operation"], on)
         return "The operation never started (the worker stopped before reaching it)."
     parts = []
+    if rec.get("skipped"):
+        parts.append("step%s %s skipped (done before)" % ("s" if len(rec["skipped"]) > 1 else "", _ranges(rec["skipped"])))
     if rec["completed"]:
         parts.append("step%s %s finished" % ("s" if len(rec["completed"]) > 1 else "", _ranges([s["index"] for s in rec["completed"]])))
     if rec["failed"]:
@@ -263,6 +286,6 @@ def latest_uncertain(lines_of=None):
         ls = read(cid)
         if ls and ls[0].get("op") in ("batch.recover", "batch.rollback"):   # never the recovery call itself
             continue
-        if ls and not any(r.get("t") == "done" or r.get("by") == "batch.rollback" for r in ls):   # finished or already handled
+        if ls and not any(r.get("t") in ("done", "resumed") or r.get("by") for r in ls):   # finished, or handled by rollback/resume
             return cid
     return None

@@ -10,12 +10,14 @@ Questions it answers:
   paste     atomic batch whose first step is setting.paste (a deferred Lua Execute): is the paste inside the undo group?
   probe     is an undo group that recorded no change an undo event in Fusion? (test.undo_probe; also records GetUndoStack)
   noop      atomic batch failing at step 0 before any change: an earlier change must survive (nothing is undone)
+  resume    a batch applies two steps, times out, and is finished with resume: no step repeats, nothing is renamed RL_R1_1
 
-Run: .venv/bin/python tests/receipts_live.py setup stall rollback keep atomic paste probe noop cleanup   (about 2 minutes)
+Run: .venv/bin/python tests/receipts_live.py setup stall rollback keep atomic paste probe noop resume cleanup   (about 3 minutes)
 Results merge into tests/receipts_live_results.json."""
 import asyncio
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -64,6 +66,7 @@ async def stall(c):
 
 
 async def stage_setup(c):
+    shutil.rmtree(os.path.join(OUT, "test_hang_once"), ignore_errors=True)   # one-time stalls start fresh
     tls = await c.do("timeline.list", {})
     if TL in json.dumps(tls.get("result") or {}):
         await c.do("timeline.delete", {"name": TL, "confirm": True})
@@ -137,6 +140,20 @@ async def stage_noop(c):
         {"rollback": rb, "exists": ex, "message": (r.get("error") or {}).get("message")})
 
 
+async def stage_resume(c):
+    ops = batch(("test.add", {"names": ["RL_R1"]}), ("test.add", {"names": ["RL_R2"]}),
+                ("test.hang", {"seconds": 20, "tool": "RL_R3", "once": True, "add": "after"}), ("test.add", {"names": ["RL_R4"]}))
+    r = await c.do("batch.run", {"comp": REF, "ops": ops}, timeoutMs=6000)
+    cid = (((r.get("error") or {}).get("details") or {}).get("receipt") or {}).get("callId")
+    await asyncio.sleep(16)
+    rs = await c.do("batch.run", {"comp": REF, "ops": ops, "resume": cid}, timeoutMs=60000)
+    res = (rs.get("result") or {}).get("resume") or {}
+    lst = await c.do("tool.list", {"comp": REF, "name": "RL_R*"})
+    names = sorted(t["name"] for t in (lst.get("result") or {}).get("tools", []))
+    rec("resume_no_duplicates", bool(cid) and rs.get("ok") and res.get("verified") is True and names == ["RL_R1", "RL_R2", "RL_R3", "RL_R4"],
+        {"timeout": (r.get("error") or {}).get("code"), "resume": res, "tools": names, "error": rs.get("error")})
+
+
 async def stage_cleanup(c):
     r = await c.do("timeline.delete", {"name": TL, "confirm": True})
     rec("cleanup", r.get("ok"), {"error": r.get("error")})
@@ -152,4 +169,4 @@ async def main(stages):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(sys.argv[1:] or ["setup", "stall", "rollback", "keep", "atomic", "paste", "probe", "noop", "cleanup"]))
+    asyncio.run(main(sys.argv[1:] or ["setup", "stall", "rollback", "keep", "atomic", "paste", "probe", "noop", "resume", "cleanup"]))

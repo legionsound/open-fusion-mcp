@@ -61,7 +61,7 @@ def _names(comp):
 @op("batch.recover", "After a TIMEOUT or a dead worker: read the call's journal (what finished, what was running, what never started) and "
     "re-read the comp it targeted: tool count against the snapshot taken before the call, added/removed tools when the snapshot holds "
     "names, whether the uncertain step's target tools exist, and whether the call's undo group was left open. Read-only; ends with "
-    "plain advice (rollback, keep, or re-run from the first unfinished step).",
+    "plain advice (rollback, keep, or finish the batch with resume).",
     [CALL_ID, COMP(), P("names", "boolean", "Diff tool names against the snapshot when it holds names (one call per tool; default true).")],
     read=True, comp=False, category="batch")
 def batch_recover(ctx, a):
@@ -85,7 +85,8 @@ def batch_recover(ctx, a):
     advice = []
     if rec["undoGroup"] == "open":
         advice.append("The call's undo group is still open: batch.rollback {callId} closes and undoes it (verified against the snapshot); "
-                      "batch.rollback {callId, keep: true} only closes it and keeps the changes. Do this before any other change.")
+                      "batch.rollback {callId, keep: true} only closes it and keeps the changes; a batch resumed with resume closes it "
+                      "and finishes. Do one of these before any other change.")
     for u in unc:
         if u["targets"]:
             hit = [t for t, e in u["targets"].items() if e]
@@ -97,7 +98,8 @@ def batch_recover(ctx, a):
                           (u["index"], u["operation"]))
     first = rec["uncertain"][0]["index"] if rec["uncertain"] else (rec["notStarted"][0] if rec["notStarted"] else None)
     if first is not None and rec.get("steps", 1) > 1:
-        advice.append("To finish the batch, re-run its ops from index %d with stopOnError: true." % first)
+        advice.append("To finish the batch, send the same ops again with resume: '%s' (step %d on; finished steps are skipped and "
+                      "nothing is duplicated)." % (cid, first))
     if later:
         advice.append("%d later change%s ran on this comp after the call, so an undo would revert those first." % (len(later), "s" if len(later) > 1 else ""))
     return {"callId": cid, "receipt": rec, "live": live, "laterChanges": later, "advice": advice}

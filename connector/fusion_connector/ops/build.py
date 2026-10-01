@@ -2188,7 +2188,7 @@ def eval_lua(ctx, comp, a):
 
 # ================================================================ batch
 
-@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. By default not transactional: completed children stay when a later one fails; set stopOnError to stop at the first failure, or atomic to undo the whole batch on any failure (verified against a snapshot). Every step is journaled: if Resolve stops answering, the TIMEOUT reply carries a receipt (finished, running, never started) and batch.recover / batch.rollback pick up from it. Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
+@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. By default not transactional: completed children stay when a later one fails; set stopOnError to stop at the first failure, or atomic to undo the whole batch on any failure (verified against a snapshot). Every step is journaled: if Resolve stops answering, the TIMEOUT reply carries a receipt (finished, running, never started) and batch.recover / batch.rollback pick up from it; to finish such a batch, send the same ops again with resume: callId (finished steps are skipped, nothing is duplicated). Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
     [COMP(), P("ops", "array", "[{operation, args}] in order ({op, args} also works)."),
      P("path", "string", "Absolute path of a JSON file holding the ops list (or {ops: [...]}) instead of ops: for long generated batches."),
      P("stopOnError", "boolean", "Stop at the first failure (default false)."),
@@ -2197,10 +2197,17 @@ def eval_lua(ctx, comp, a):
                             "may ride along (reads too); timeline, project and Deliver operations are refused up front. Default false."),
      P("snapshot", "string", "Comp snapshot journaled before the first step: count (default, cheap) or names (every tool name, one call per "
                              "tool; lets batch.recover list added/removed tools after a timeout). Atomic batches take names.",
-       enum=("count", "names"))],
+       enum=("count", "names")),
+     P("resume", "string", "callId of an unfinished batch.run (from its TIMEOUT receipt) to finish: send the same ops; the steps that "
+                           "finished are skipped (their args must be unchanged), the rest run, and the comp is read back so every "
+                           "intended tool exists once (Fusion would rename a repeated one Title_1). Keeps the finished steps."),
+     P("uncertain", "string", "With resume: what to do with a step that was running (or failed) and may have partly applied. check "
+                              "(default): re-run it only when none of its target tools exist, else refuse; skip; rerun.",
+       enum=("check", "skip", "rerun"))],
     read=True, undo=False)
 def batch_run(ctx, comp, a):
-    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")), atomic=bool(a.get("atomic")), snapshot=a.get("snapshot"), ref=a.get("comp"))
+    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")), atomic=bool(a.get("atomic")), snapshot=a.get("snapshot"), ref=a.get("comp"),
+                         resume=a.get("resume"), uncertain=a.get("uncertain") or "check")
 
 
 _BUILDER_ERR = register_builders()

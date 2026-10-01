@@ -140,7 +140,16 @@ def json_schema(params):
 
 
 def summarize(params):
-    return [f"{p.name}: {p.type} ({'required' if p.required else 'optional'})" for p in params]
+    """One line per parameter for error replies [issue #13]: name, type, required, allowed values, default."""
+    def extra(p):
+        out = []
+        if p.enum:
+            vals = [str(v) for v in p.enum]
+            out.append("one of " + "|".join(vals[:12]) + ("|..." if len(vals) > 12 else ""))
+        if p.default is not None:
+            out.append("default %s" % p.default)
+        return "".join(", " + x for x in out)
+    return [f"{p.name}: {p.type} ({'required' if p.required else 'optional'}{extra(p)})" for p in params]
 
 
 def validate(op, raw):

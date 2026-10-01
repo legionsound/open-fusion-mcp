@@ -8,6 +8,7 @@ import json
 import os
 import time
 
+from . import config
 from .ops.base import op, OpError, COMP
 from .schema import P
 
@@ -40,6 +41,10 @@ class FakeTool:
     def SetAttrs(self, attrs):
         new = attrs.get("TOOLS_Name")
         if new and new != self.Name:
+            taken = {n.lower() for n in _load(self.comp.path)["tools"] if n != self.Name}
+            base, k = new, 1
+            while new.lower() in taken:   # like Fusion: a colliding name gets a suffix instead of an error (realities §9)
+                new, k = "%s_%d" % (base, k), k + 1
             self.comp._act(["rename", self.Name, new])
             self.Name = new
         return True
@@ -215,6 +220,8 @@ def _guard(ctx):
 @op("test.add", "Test only: add tools with these names.", [P("names", "array", "Tool names.", required=True)], category="test")
 def t_add(ctx, comp, a):
     reg = _guard(ctx)
+    if any(not isinstance(n, str) or not n for n in a["names"]):
+        raise OpError("INVALID_ARGS", "tool names must be non-empty strings")
     for n in a["names"]:
         comp.SetActiveTool(None)   # AddTool would auto-wire to the active tool (realities)
         comp.AddTool(reg, -32768, -32768).SetAttrs({"TOOLS_Name": n})
@@ -232,11 +239,25 @@ def t_partial(ctx, comp, a):
 
 
 @op("test.hang", "Test only: stall like a Resolve call that never returns.",
-    [P("seconds", "number", "How long.", default=30), P("tool", "string", "A target name for the receipt.")], category="test")
+    [P("seconds", "number", "How long.", default=30), P("tool", "string", "A target name for the receipt."),
+     P("once", "boolean", "Stall only the first time for this tool (a transient stall); later runs go straight on."),
+     P("add", "string", "Also add the tool named by tool, before or after the stall.", enum=("before", "after"))], category="test")
 def t_hang(ctx, comp, a):
-    _guard(ctx)
-    time.sleep(float(a.get("seconds", 30)))
-    return {"slept": a.get("seconds", 30)}
+    reg = _guard(ctx)
+    tool, s = a.get("tool"), float(a.get("seconds", 30))
+    if a.get("add") == "before":
+        comp.SetActiveTool(None)
+        comp.AddTool(reg, -32768, -32768).SetAttrs({"TOOLS_Name": tool})
+    mark = os.path.join(config.out_dir(), "test_hang_once", str(tool))
+    if not (a.get("once") and os.path.exists(mark)):
+        if a.get("once"):
+            os.makedirs(os.path.dirname(mark), exist_ok=True)
+            open(mark, "w").close()
+        time.sleep(s)
+    if a.get("add") == "after":
+        comp.SetActiveTool(None)
+        comp.AddTool(reg, -32768, -32768).SetAttrs({"TOOLS_Name": tool})
+    return {"slept": s, **({"added": [tool]} if a.get("add") else {})}
 
 
 @op("test.crash", "Test only: kill the worker process mid-call.", [], category="test")

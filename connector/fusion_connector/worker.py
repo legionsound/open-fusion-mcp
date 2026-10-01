@@ -58,10 +58,13 @@ def open_journal(msg):
     if not msg.get("callId"):
         return None
     try:
-        from .journal import Journal
+        from .journal import Journal, args_hash
         a = msg.get("args") or {}
-        kids = [ch.get("operation") for ch in a.get("ops") or []] if msg["name"] == "batch.run" else None
-        return Journal(msg["callId"], msg["name"], comp=a.get("comp"), children=kids)
+        batch = msg["name"] == "batch.run"
+        kids = [ch.get("operation") for ch in a.get("ops") or []] if batch else None
+        hashes = [None if ch.get("rejected") else args_hash(ch.get("args") or {}) for ch in a.get("ops") or []] if batch else None
+        return Journal(msg["callId"], msg["name"], comp=a.get("comp"), children=kids, hashes=hashes,
+                       resumes=a.get("resume") if batch else None)
     except Exception:  # noqa: a full disk must not stop Resolve work
         return None
 
@@ -163,12 +166,20 @@ def _run_op(ctx, op, name, args, in_batch):
             jot(ctx, "undo", "closed")
 
 
-def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
+def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None, resume=None, uncertain="check"):
     """children were validated/policy-checked by the server; rejected ones carry 'rejected'.
     atomic [issue #2]: stop at the first failure, undo the batch's undo group and verify the comp against the snapshot taken
-    before the first step. snapshot: 'count' (default) or 'names' (also every tool name; atomic batches take names)."""
+    before the first step. snapshot: 'count' (default) or 'names' (also every tool name; atomic batches take names).
+    resume [issue #14]: the callId of an unfinished batch.run with the same ops: its finished steps are skipped, the rest run,
+    and the comp is read back (every intended tool exists, none was duplicated)."""
     from .ops import OPS
     from .ops.base import OpError, jv
+    plan = None
+    if resume:
+        if atomic:
+            raise OpError("INVALID_ARGS", "resume and atomic do not combine: the finished steps are kept",
+                          hint="batch.rollback {callId} undoes the unfinished batch; then run it again with atomic: true.")
+        plan = resume_plan(ctx, comp, children, resume, uncertain)
     if atomic:
         bad, rejected = [], []
         for i, ch in enumerate(children):
@@ -190,7 +201,10 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
                           hint="Run timeline, project and Deliver operations (and steps on another comp) outside the atomic batch.",
                           details={"notUndoable": bad})
         stop = True
-    snap = jot(ctx, "snapshot", comp, names=atomic or snapshot == "names")
+    snap = jot(ctx, "snapshot", comp, names=atomic or snapshot == "names" or plan is not None)
+    if snap is None and plan is not None:
+        from .journal import take_snapshot
+        snap = take_snapshot(comp, names=True)
     if snap is None and atomic:   # no journal: the rollback still needs its baseline
         from .journal import take_snapshot
         snap = take_snapshot(comp, names=True)
@@ -200,6 +214,10 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
     jot(ctx, "undo", "open")
     try:
         for i, ch in enumerate(children):
+            if plan is not None and i in plan["skip"]:
+                jot(ctx, "skip", i, plan["skip"][i])
+                results.append({"index": i, "skipped": True, "reason": plan["skip"][i]})
+                continue
             if stopped:
                 results.append({"index": i, "skipped": True})
                 continue
@@ -232,6 +250,8 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
     out = {"results": results, "count": len(results), "failed": failed}
     if getattr(ctx, "journal", None) is not None:
         out["callId"] = ctx.journal.id
+    if plan is not None:
+        out["resume"] = resume_readback(comp, snap, plan, results)
     if inline:
         out["previews"] = inline
         out["_inline"] = inline[:8]
@@ -261,6 +281,75 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
                       "(one comp.undo reverts the whole batch, or pass atomic: true)", details=out,
                       hint="Inspect details.results (input order) before retrying only the failed children.")
     return out
+
+
+def resume_plan(ctx, comp, children, cid, how):
+    """[issue #14] Which steps of the resumed call to skip. Refuses when the ops differ, when a finished step's args changed, or when
+    a step that may have partly applied (it was running, or failed) left its target tools behind and how is 'check'."""
+    from . import journal
+    from .ops.base import OpError
+    lines = journal.read(cid)
+    head = lines[0] if lines and lines[0].get("t") == "call" else None
+    if head is None:
+        raise OpError("NOT_FOUND", f"no journal for call '{cid}'", hint="Pass the callId from the receipt (journals keep the newest 200 calls).")
+    if head.get("op") != "batch.run":
+        raise OpError("INVALID_ARGS", f"call {cid} was {head.get('op')}, not batch.run: only batches resume",
+                      hint="Check the operation's target with batch.recover, then run it again if it did not apply.")
+    if any(r.get("t") == "resumed" for r in lines):
+        raise OpError("CONFLICT", f"call {cid} was already resumed by {next(r.get('by') for r in lines if r.get('t') == 'resumed')}",
+                      hint="If that call did not finish either, resume it instead.")
+    rec = journal.reconcile(lines)
+    if (rec.get("rollback") or {}).get("rolledBack"):
+        raise OpError("CONFLICT", f"call {cid} was rolled back: run the batch again without resume")
+    sent = [ch.get("operation") for ch in children]
+    if sent != (head.get("children") or []):
+        raise OpError("INVALID_ARGS", f"the ops differ from call {cid}: resume needs the same operations in the same order",
+                      details={"journaled": head.get("children"), "sent": sent})
+    done = {s["index"] for s in rec["completed"]} | set(rec.get("skipped") or [])
+    hashes = head.get("argsHash") or []
+    moved = [i for i in sorted(done) if i < len(hashes) and hashes[i] and journal.args_hash(children[i].get("args") or {}) != hashes[i]]
+    if moved:
+        raise OpError("INVALID_ARGS", "steps %s already ran with other arguments: resume needs them unchanged" % moved,
+                      details={"changed": moved}, hint="Send the finished steps exactly as before (later steps may change).")
+    targets = {r["i"]: r.get("targets") or [] for r in lines if r.get("t") == "start"}
+    skip = {i: "done in %s" % cid for i in done}
+    risky, conflicts = [u["index"] for u in rec["uncertain"]] + [f["index"] for f in rec["failed"]], []
+    for i in sorted(risky):
+        there = [t for t in targets.get(i, []) if comp.FindTool(t) is not None]
+        if how == "skip":
+            skip[i] = "may have applied in %s; skipped (uncertain: skip)" % cid
+        elif how == "check" and there:
+            conflicts.append({"index": i, "operation": children[i].get("operation"), "targetsPresent": there})
+    if conflicts:
+        raise OpError("CONFLICT", "step%s %s may have partly applied: target tools exist" % (
+            "s" if len(conflicts) > 1 else "", ", ".join(str(c["index"]) for c in conflicts)), details={"uncertain": conflicts},
+            hint="Inspect them (tool.info, batch.recover), then resume with uncertain: 'skip' (keep what is there) or 'rerun' (run it again).")
+    if rec["undoGroup"] == "open":   # resume keeps the finished steps: close the dead worker's group first
+        comp.EndUndo(True)
+        journal.append(cid, {"t": "undo", "state": "closed", "by": "batch.resume"})
+    journal.append(cid, {"t": "resumed", "by": ctx.journal.id if getattr(ctx, "journal", None) is not None else "?"})
+    earlier = created_names([s.get("changed") for s in rec["completed"]])
+    return {"callId": cid, "skip": skip, "earlier": earlier, "closedUndoGroup": rec["undoGroup"] == "open"}
+
+
+def resume_readback(comp, snap, plan, results):
+    """Every tool the batch meant to create exists, and nothing new is a renamed copy of one (Fusion renames a colliding tool
+    Title -> Title_1) [issue #14]."""
+    import re
+    ran = created_names([r.get("result") for r in results if r.get("ok")])
+    intended = list(dict.fromkeys(plan["earlier"] + ran))
+    missing = [n for n in intended if comp.FindTool(n) is None]
+    ev = {"intended": len(intended), "missing": missing[:20]}
+    if "names" in snap:
+        now = {t.GetAttrs()["TOOLS_Name"] for t in (comp.GetToolList(False) or {}).values()}
+        base = {n.lower() for n in intended}
+        new = sorted(now - set(snap["names"]) - set(ran))
+        ev["duplicates"] = [n for n in new if re.sub(r"(_\d+|\d+)$", "", n).lower() in base][:20]
+    else:
+        ev["duplicates"] = None
+        ev["note"] = "the comp is over the snapshot limit, so duplicates were not checked"
+    return {"resumed": plan["callId"], "skipped": sorted(plan["skip"]), "closedUndoGroup": plan["closedUndoGroup"],
+            "verified": not missing and ev["duplicates"] == [], "evidence": ev}
 
 
 def created_names(results):

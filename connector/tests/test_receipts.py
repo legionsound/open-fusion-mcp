@@ -71,6 +71,7 @@ class Base(unittest.TestCase):
         if os.path.exists(STATE):
             os.unlink(STATE)
         shutil.rmtree(os.path.join(TMP, "out", "journal"), ignore_errors=True)
+        shutil.rmtree(os.path.join(TMP, "out", "test_hang_once"), ignore_errors=True)
         r = call("test.add", {"names": []})            # warm worker: spawn time never eats a short timeout
         self.assertTrue(r["ok"], r)
 
@@ -184,7 +185,7 @@ class Timeouts(Base):
         adv = " ".join(res["advice"])
         self.assertIn("undo group is still open", adv)
         self.assertIn("most likely did not apply", adv)
-        self.assertIn("from index 2", adv)
+        self.assertIn("resume: '%s' (step 2 on" % cid, adv)
         self.assertEqual(call("batch.recover", {})["result"]["callId"], cid)    # default: the newest unfinished call
 
     def test_rollback_closes_the_open_group_and_undoes(self):
@@ -258,6 +259,90 @@ class Timeouts(Base):
         rec = e["details"]["receipt"]
         self.assertEqual(([s["index"] for s in rec["completed"]], [u["index"] for u in rec["uncertain"]], rec["notStarted"]), ([0], [1], [2]))
         self.assertEqual(tools(), ["A"])
+
+
+class Resume(Base):
+    """[issue #14] A batch applies its first steps, times out, and is finished without repeating them (the test suggested in the
+    r/mcp thread): the read-back is compared with the intended tools, not just the job status."""
+    OPS = [{"operation": "test.add", "args": {"names": ["A"]}}, {"operation": "test.add", "args": {"names": ["B"]}},
+           {"operation": "test.hang", "args": {"seconds": 30, "tool": "X", "once": True, "add": "after"}},
+           {"operation": "test.add", "args": {"names": ["C"]}}]
+
+    def stall(self, ops=None):
+        e = self.err(call("batch.run", {"ops": ops or self.OPS}, timeoutMs=3000))
+        self.assertEqual(e["code"], "TIMEOUT")
+        return e["details"]["receipt"]["callId"]
+
+    def test_a_plain_retry_duplicates_finished_steps(self):
+        self.stall()
+        self.assertTrue(call("batch.run", {"ops": self.OPS})["ok"])      # the stall was transient: the retry runs everything
+        self.assertEqual(tools(), ["A", "A_1", "B", "B_1", "C", "X"])     # what resume prevents (Fusion renames, never errors)
+
+    def test_resume_skips_finished_steps_and_reads_back(self):
+        cid = self.stall()
+        r = call("batch.run", {"ops": self.OPS, "resume": cid})
+        self.assertTrue(r["ok"], r)
+        res = r["result"]
+        self.assertEqual([x["index"] for x in res["results"] if x.get("skipped")], [0, 1])
+        self.assertEqual(tools(), ["A", "B", "C", "X"])                   # every intended tool once
+        rb = res["resume"]
+        self.assertTrue(rb["verified"] and rb["closedUndoGroup"], rb)
+        self.assertEqual((rb["evidence"]["missing"], rb["evidence"]["duplicates"], rb["evidence"]["intended"]), ([], [], 4))
+        self.assertFalse([g for g in fake_state()["groups"] if g["open"]])
+        self.assertEqual(self.err(call("batch.recover", {}))["code"], "NOT_FOUND")             # handled
+        self.assertEqual(self.err(call("batch.run", {"ops": self.OPS, "resume": cid}))["code"], "CONFLICT")   # only once
+
+    def test_resume_refuses_a_different_batch(self):
+        cid = self.stall()
+        changed = [dict(self.OPS[0], args={"names": ["Z"]})] + self.OPS[1:]
+        e = self.err(call("batch.run", {"ops": changed, "resume": cid}))
+        self.assertEqual((e["code"], e["details"]["changed"]), ("INVALID_ARGS", [0]))
+        self.assertEqual(self.err(call("batch.run", {"ops": self.OPS[:3], "resume": cid}))["code"], "INVALID_ARGS")
+        self.assertEqual(tools(), ["A", "B"])
+
+    def test_resume_asks_when_the_running_step_left_its_tool(self):
+        ops = [{"operation": "test.add", "args": {"names": ["A"]}},
+               {"operation": "test.hang", "args": {"seconds": 30, "tool": "X", "once": True, "add": "before"}},
+               {"operation": "test.add", "args": {"names": ["C"]}}]
+        cid = self.stall(ops)
+        e = self.err(call("batch.run", {"ops": ops, "resume": cid}))
+        self.assertEqual(e["code"], "CONFLICT")
+        self.assertEqual(e["details"]["uncertain"], [{"index": 1, "operation": "test.hang", "targetsPresent": ["X"]}])
+        r = call("batch.run", {"ops": ops, "resume": cid, "uncertain": "skip"})
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(tools(), ["A", "C", "X"])                        # X was kept, not added again as X_1
+
+    def test_resume_needs_a_batch_and_no_atomic(self):
+        cid = self.err(call("test.hang", {"seconds": 30, "tool": "Y"}, timeoutMs=2500))["details"]["receipt"]["callId"]
+        e = self.err(call("batch.run", {"ops": [{"operation": "test.hang", "args": {"seconds": 1, "tool": "Y"}}], "resume": cid}))
+        self.assertIn("only batches resume", e["message"])
+        self.assertEqual(self.err(call("batch.run", {"ops": self.OPS, "resume": cid, "atomic": True}))["code"], "INVALID_ARGS")
+
+    def test_receipt_and_advice_point_to_resume(self):
+        e = self.err(call("batch.run", {"ops": self.OPS}, timeoutMs=3000))
+        self.assertIn("resume: '%s'" % e["details"]["receipt"]["callId"], e["hint"])
+        adv = " ".join(call("batch.recover", {})["result"]["advice"])
+        self.assertIn("resume", adv)
+
+
+class ExpectedParams(Base):
+    """[issue #13] Every INVALID_ARGS reply lists the operation's parameters, including errors raised inside the operation."""
+
+    def test_error_inside_the_operation(self):
+        e = self.err(call("test.add", {"names": [""]}))
+        self.assertEqual(e["code"], "INVALID_ARGS")
+        self.assertEqual(e["details"]["expected"], ["names: array (required)"])
+        self.assertIn("details.expected", e["hint"])
+
+    def test_failed_batch_child(self):
+        e = self.err(call("batch.run", {"ops": [{"operation": "test.add", "args": {"names": [""]}}]}))
+        child = e["details"]["results"][0]["error"]
+        self.assertEqual(child["details"]["expected"], ["names: array (required)"])
+
+    def test_schema_error_lists_enums_and_defaults(self):
+        e = self.err(call("test.hang", {"seconds": 1, "add": "during"}))
+        self.assertIn("add: string (optional, one of before|after)", e["details"]["expected"])
+        self.assertIn("seconds: number (optional, default 30)", e["details"]["expected"])
 
 
 class JournalUnits(unittest.TestCase):

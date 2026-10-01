@@ -1,4 +1,4 @@
-<!-- fusion-realities.md part 2 of 2; index: fusion-realities.md -->
+<!-- fusion-realities.md part 2 of 3; index: fusion-realities.md -->
 ## §11. Silent-failure list
 
 0. AddTool on the Fusion-page comp without `SetActiveTool(None)`: silent auto-wiring and

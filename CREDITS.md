@@ -12,7 +12,7 @@ its After Effects skill set (`ae-clean-rig`, `ae-animation-principles`, `ae-ui-m
 `ae-depth-space`, `ae-liquid-glass`, `ae-transition-kit`, `ae-build-orchestration`, `ae-cleanup`,
 `ae-figma-transfer`, `ae-matte-painting`).
 
-- The connector mirrors that connector's shape: the eleven `fu_*` tools correspond to its `ae_*` tools, and
+- The connector mirrors that connector's shape: eleven of the `fu_*` tools correspond to its `ae_*` tools, and
   `connector/PARITY.md` maps each of its operations to a Fusion operation. `scripts/parity.py` reads that
   connector's operation registry, which is not included here.
 - The builders in `skills/fusion-motion-design/scripts/fusion_build.py` keep the parameter names and enums of

@@ -10,9 +10,10 @@ Questions it answers:
   paste     atomic batch whose first step is setting.paste (a deferred Lua Execute): is the paste inside the undo group?
   probe     is an undo group that recorded no change an undo event in Fusion? (test.undo_probe; also records GetUndoStack)
   noop      atomic batch failing at step 0 before any change: an earlier change must survive (nothing is undone)
+  collide   adding a tool whose name is taken: does Fusion rename the new one (and how) rather than fail? (what a plain retry does)
   resume    a batch applies two steps, times out, and is finished with resume: no step repeats, nothing is renamed RL_R1_1
 
-Run: .venv/bin/python tests/receipts_live.py setup stall rollback keep atomic paste probe noop resume cleanup   (about 3 minutes)
+Run: .venv/bin/python tests/receipts_live.py setup stall rollback keep atomic paste probe noop collide resume cleanup   (about 3 minutes)
 Results merge into tests/receipts_live_results.json."""
 import asyncio
 import json
@@ -140,6 +141,22 @@ async def stage_noop(c):
         {"rollback": rb, "exists": ex, "message": (r.get("error") or {}).get("message")})
 
 
+async def all_names(c):
+    r = await c.do("tool.list", {"comp": REF})
+    return {t["name"] for t in (r.get("result") or {}).get("tools", [])}
+
+
+async def stage_collide(c):
+    import re
+    a = await c.do("batch.run", {"comp": REF, "ops": batch(("test.add", {"names": ["RL_Dup"]}))})
+    before = await all_names(c)
+    b = await c.do("batch.run", {"comp": REF, "ops": batch(("test.add", {"names": ["RL_Dup"]}))})
+    new = sorted(await all_names(c) - before)
+    stem = lambda n: re.sub(r"(_?\d+)+$", "", n).lower()   # noqa: E731  same rule as the resume read-back
+    rec("collide_renames_not_fails", a.get("ok") and b.get("ok") and len(new) == 1,
+        {"secondToolName": new, "caughtByReadback": [stem(n) == "rl_dup" for n in new], "second": b.get("result") or b.get("error")})
+
+
 async def stage_resume(c):
     ops = batch(("test.add", {"names": ["RL_R1"]}), ("test.add", {"names": ["RL_R2"]}),
                 ("test.hang", {"seconds": 20, "tool": "RL_R3", "once": True, "add": "after"}), ("test.add", {"names": ["RL_R4"]}))
@@ -169,4 +186,4 @@ async def main(stages):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(sys.argv[1:] or ["setup", "stall", "rollback", "keep", "atomic", "paste", "probe", "noop", "resume", "cleanup"]))
+    asyncio.run(main(sys.argv[1:] or ["setup", "stall", "rollback", "keep", "atomic", "paste", "probe", "noop", "collide", "resume", "cleanup"]))

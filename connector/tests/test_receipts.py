@@ -364,6 +364,17 @@ class JournalUnits(unittest.TestCase):
         finally:
             os.environ["FUSION_MCP_OUT_DIR"] = ENV["FUSION_MCP_OUT_DIR"]
 
+    def test_readback_catches_renamed_copies(self):
+        from fusion_connector import testkit
+        from fusion_connector.worker import resume_readback
+        path = os.path.join(TMP, "unit_fake.json")
+        testkit._save(path, {"tools": {n: {"reg": "F"} for n in ("RL_R1", "RL_R11", "Title", "Title_1", "Other")}, "groups": [], "data": {}})
+        plan = {"callId": "x", "skip": {0: "done", 1: "done"}, "earlier": ["RL_R1", "Title"], "closedUndoGroup": False}
+        rb = resume_readback(testkit.FakeComp(path), {"names": ["RL_R1", "Title"]}, plan, [])
+        self.assertEqual(rb["evidence"]["duplicates"], ["RL_R11", "Title_1"])     # Fusion's _1 and an appended digit
+        self.assertEqual(rb["evidence"]["unreported"], ["Other"])
+        self.assertFalse(rb["verified"])
+
     def test_targets_and_changes(self):
         from fusion_connector import journal
         self.assertEqual(journal.targets_of({"tool": "Title", "input": "Size", "from": {"tool": "A", "input": "Output"}}), ["Title", "A"])

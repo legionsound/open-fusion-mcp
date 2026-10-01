@@ -342,9 +342,11 @@ def resume_readback(comp, snap, plan, results):
     ev = {"intended": len(intended), "missing": missing[:20]}
     if "names" in snap:
         now = {t.GetAttrs()["TOOLS_Name"] for t in (comp.GetToolList(False) or {}).values()}
-        base = {n.lower() for n in intended}
+        stem = lambda n: re.sub(r"(_?\d+)+$", "", n).lower()   # noqa: E731  Title_1, Title1 and RL_R11 (from RL_R1) share a stem
+        base = {stem(n) for n in intended}
         new = sorted(now - set(snap["names"]) - set(ran))
-        ev["duplicates"] = [n for n in new if re.sub(r"(_\d+|\d+)$", "", n).lower() in base][:20]
+        ev["duplicates"] = [n for n in new if stem(n) in base][:20]
+        ev["unreported"] = [n for n in new if stem(n) not in base][:20]   # new tools no step reported creating (for a look)
     else:
         ev["duplicates"] = None
         ev["note"] = "the comp is over the snapshot limit, so duplicates were not checked"

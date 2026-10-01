@@ -105,8 +105,9 @@ them on disk.
   (`uncertain: "check"`) it runs again only when none of its target tools exist, otherwise the call stops with
   `CONFLICT` so the agent can inspect and choose `skip` or `rerun`. The dead worker's undo group is closed first,
   so the resumed part is its own undo event. Afterwards the comp is read back: every tool the batch meant to
-  create exists, and no new tool is a renamed copy of one (Fusion names a repeated tool `Title_1` instead of
-  failing, which is what a plain retry of the whole batch would cause). A call is resumed once; resume and
+  create exists, and no new tool is a renamed copy of one (a paste names a repeated tool `Title_1` instead of
+  failing, which is what a plain retry of the whole batch would cause). New tools that no step reported creating
+  are listed for a look. A call is resumed once; resume and
   `atomic` do not combine.
 - Rollback undoes only with evidence that the call changed something: a step that finished, or a comp that
   differs from the snapshot. An undo group that recorded no change may not be an undo event, and one `Undo`
@@ -128,10 +129,11 @@ and one `comp.undo` still reverts the whole batch.
 ## What only real Fusion can confirm
 
 The offline tests run these paths through the real server and a real worker process against a fake Resolve
-(below). Four behaviors belong to Fusion itself: whether a killed worker leaves the comp's undo group open,
+(below). Some behaviors belong to Fusion itself: whether a killed worker leaves the comp's undo group open,
 whether closing that group and one `Undo` revert exactly the batch on a real comp (rollback, `keep`, atomic),
-whether `setting.paste`, which runs as a deferred Lua `Execute`, lands inside the batch's undo group, and
-whether an undo group that recorded no change is an undo event at all (`test.undo_probe`).
+whether `setting.paste`, which runs as a deferred Lua `Execute`, lands inside the batch's undo group, whether an
+undo group that recorded no change is an undo event at all (`test.undo_probe`), how Fusion names a tool whose
+name is taken (what a plain retry would do), and whether a resumed batch finishes without duplicates.
 `tests/receipts_live.py` checks them in a scratch project.
 
 ## Scripting-port check (`fusion_connector/diag.py`)
@@ -182,7 +184,7 @@ Resolve, except for the live check in the project named `Testbed` with `FUSION_M
 ## Tests
 
 - `tests/test_offline.py`, `tests/test_layout.py`, `tests/test_catalog_tools.py`, `tests/test_receipts.py`,
-  `tests/test_diagnostics.py`: 233 offline unit tests (no Resolve). `test_receipts.py` drives the real server
+  `tests/test_diagnostics.py`: 234 offline unit tests (no Resolve). `test_receipts.py` drives the real server
   and a spawned worker through the fake Resolve's faults: receipts on `TIMEOUT` and `TRANSPORT`, recover,
   rollback with and without `keep`, the refusals after later changes and after a first rollback, atomic
   batches, the evidence rule with empty undo groups kept or dropped, resume (a plain retry duplicates the

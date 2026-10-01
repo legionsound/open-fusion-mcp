@@ -4,7 +4,7 @@
 
 ## How it was checked
 
-- [ ] Offline tests pass (`tests.test_offline`, `tests.test_layout`)
+- [ ] Offline tests pass (`tests.test_offline`, `tests.test_layout`, `tests.test_catalog_tools`, `tests.test_receipts`, `tests.test_diagnostics`)
 - [ ] Live checks that cover the change were run in a scratch project (say which, and what they reported)
 - [ ] Rendered frames checked where the change affects pixels
 - [ ] `python3 scripts/audit.py` reports no findings

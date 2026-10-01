@@ -38,16 +38,16 @@ Offline tests need no Resolve and run in CI:
 
 ```sh
 cd connector
-FUSION_MCP_SKILLS_ROOT="$PWD/../skills" .venv/bin/python -m unittest tests.test_offline tests.test_layout
+FUSION_MCP_SKILLS_ROOT="$PWD/../skills" .venv/bin/python -m unittest tests.test_offline tests.test_layout tests.test_catalog_tools tests.test_receipts tests.test_diagnostics
 ```
 
 Tests that need the harvested Fusion data tables skip themselves until you generate the tables
 ([how](skills/fusion-reference/data/README.md)); run them with the tables before you change ID checks, layout or
 `.setting` output.
 
-Live checks (`tests/smoke.py`, `tests/cache_live.py`, `tests/layout_live.py`, `tests/sb3_live.py`) drive a real
-Resolve through the server. Run the ones that cover your change, in the scratch project, and say in the pull
-request which ran and what they reported.
+Live checks (`tests/smoke.py`, `tests/cache_live.py`, `tests/layout_live.py`, `tests/sb3_live.py`,
+`tests/receipts_live.py`) drive a real Resolve through the server. Run the ones that cover your change, in the
+scratch project, and say in the pull request which ran and what they reported.
 
 ## Pull requests
 

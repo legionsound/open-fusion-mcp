@@ -17,4 +17,4 @@ WORK="$(mktemp -d "${TMPDIR:-/tmp}/ofm_tests.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 cd "$REPO/connector"
 FUSION_MCP_SKILLS_ROOT="$REPO/skills" FUSION_MCP_OUT_DIR="$WORK/out" FUSION_MCP_CACHE_DIR="$WORK/cache" \
-PYTHONDONTWRITEBYTECODE=1 PYTHONWARNINGS=ignore::ResourceWarning "$PY" -m unittest tests.test_offline tests.test_layout
+PYTHONDONTWRITEBYTECODE=1 PYTHONWARNINGS=ignore::ResourceWarning "$PY" -m unittest tests.test_offline tests.test_layout tests.test_catalog_tools tests.test_receipts tests.test_diagnostics

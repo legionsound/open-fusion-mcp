@@ -36,7 +36,7 @@ jobs:
           FUSION_MCP_OUT_DIR: ${{ runner.temp }}/out
           FUSION_MCP_CACHE_DIR: ${{ runner.temp }}/cache
           PYTHONDONTWRITEBYTECODE: "1"
-        run: python -m unittest -v tests.test_offline tests.test_layout
+        run: python -m unittest -v tests.test_offline tests.test_layout tests.test_catalog_tools tests.test_receipts tests.test_diagnostics
 
   audit:
     name: Secrets and personal-data scan

@@ -19,7 +19,7 @@ Other:
 """
 import os
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 SERVER_ID = "use-fusion"
 SERVER_TITLE = "Use Fusion"
 

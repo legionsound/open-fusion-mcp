@@ -530,7 +530,9 @@ def scene_build(ctx, comp, a):
     W, H, fps = ctx.fmt(comp)
     warn = list(sorted(set(c.warnings))) + film_warn + lw + _controls_from_check(ctx, comp, desc)
     if (W, H) != (c.W, c.H):
-        warn.append(f"comp frame format is {W}x{H}, the scene is {c.W}x{c.H}: the scene was built for its own size (timeline.set_format)")
+        warn.append(f"comp frame format is {W}x{H}, the scene is {c.W}x{c.H}: the scene was built for its own size. A comp keeps its clip's "
+                    f"frame size (timeline.set_format does not resize existing Fusion clips): timeline.add_fusion_clip on a {c.W}x{c.H} "
+                    "timeline makes a new clip at that size; rebuild there")
     if abs(fps - c.fps) > 1e-3:
         warn.append(f"comp runs at {fps} fps, the scene at {c.fps}")
     if bad:

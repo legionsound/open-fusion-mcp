@@ -113,7 +113,7 @@ class SkillStore:
                 "skills": [{"name": s["name"], "description": s["description"],
                             "references": sorted(k for k in s["documents"] if k != "SKILL.md"),
                             "files": sorted(s["files"])} for s in self.man["skills"]],
-                "start": "use-fusion for the connector and the scene builder; fusion-motion-design (router) for any build; fusion-reference for API/IDs; references/fusion-realities.md (an index of two parts) before the first mutation.",
+                "start": "use-fusion for the connector and the scene builder; fusion-motion-design (router) for any build; fusion-reference for API/IDs; references/fusion-realities.md (an index of three parts) before the first mutation.",
                 "paging": "documents over ~34k chars come back in pages (nextOffset); references over 40k are split into <name>-N.md parts behind an index; section: '<heading>' finds a section in the parts"}
 
     def skill(self, name):

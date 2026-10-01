@@ -2188,13 +2188,19 @@ def eval_lua(ctx, comp, a):
 
 # ================================================================ batch
 
-@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. Not transactional: completed children stay when a later one fails (no automatic rollback); set stopOnError to stop at the first failure. Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
-    [COMP(), P("ops", "array", "[{operation, args}] in order."),
+@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. By default not transactional: completed children stay when a later one fails; set stopOnError to stop at the first failure, or atomic to undo the whole batch on any failure (verified against a snapshot). Every step is journaled: if Resolve stops answering, the TIMEOUT reply carries a receipt (finished, running, never started) and batch.recover / batch.rollback pick up from it. Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
+    [COMP(), P("ops", "array", "[{operation, args}] in order ({op, args} also works)."),
      P("path", "string", "Absolute path of a JSON file holding the ops list (or {ops: [...]}) instead of ops: for long generated batches."),
-     P("stopOnError", "boolean", "Stop at the first failure (default false).")],
+     P("stopOnError", "boolean", "Stop at the first failure (default false)."),
+     P("atomic", "boolean", "All or nothing: on the first failure undo the whole batch and verify the comp matches the snapshot taken before it "
+                            "(tool count, names up to FUSION_MCP_SNAPSHOT_LIMIT tools, created tools gone). Only comp changes one undo reverts "
+                            "may ride along (reads too); timeline, project and Deliver operations are refused up front. Default false."),
+     P("snapshot", "string", "Comp snapshot journaled before the first step: count (default, cheap) or names (every tool name, one call per "
+                             "tool; lets batch.recover list added/removed tools after a timeout). Atomic batches take names.",
+       enum=("count", "names"))],
     read=True, undo=False)
 def batch_run(ctx, comp, a):
-    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")))
+    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")), atomic=bool(a.get("atomic")), snapshot=a.get("snapshot"), ref=a.get("comp"))
 
 
 _BUILDER_ERR = register_builders()

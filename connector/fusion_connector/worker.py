@@ -30,22 +30,59 @@ def handle(ctx, msg):
     from .ops.base import OpError, jv
     ctx.policy = msg.get("policy") or {}
     ctx.notes = []
+    ctx.journal = None
     t0 = time.time()
     try:
         if msg["kind"] == "op":
-            result = run_op(ctx, msg["name"], msg.get("args") or {})
+            ctx.journal = open_journal(msg)
+            result = run_op(ctx, msg["name"], msg.get("args") or {}, step=ctx.journal is not None and msg["name"] != "batch.run")
         else:
             result = CALLS[msg["name"]](ctx, msg.get("args") or {})
         out = {"ok": True, "result": result, "durationMs": int((time.time() - t0) * 1000)}
         if msg.get("ambient"):
             out["context"] = ctx.ambient()
+        close_journal(ctx, True)
         return out
     except OpError as e:
+        close_journal(ctx, False)
         return {"ok": False, "code": e.code, "message": e.message, "hint": e.hint, "details": jv(e.details),
                 "notes": ctx.notes, "durationMs": int((time.time() - t0) * 1000)}
     except Exception as e:  # noqa
+        close_journal(ctx, False)
         return {"ok": False, "code": "OPERATION_FAILED", "message": f"{type(e).__name__}: {e}",
                 "stack": traceback.format_exc(limit=6), "notes": ctx.notes, "durationMs": int((time.time() - t0) * 1000)}
+
+
+def open_journal(msg):
+    """[issue #1] A journal per op call, so a timeout or a dead worker still leaves a receipt. Never fails the call."""
+    if not msg.get("callId"):
+        return None
+    try:
+        from .journal import Journal
+        a = msg.get("args") or {}
+        kids = [ch.get("operation") for ch in a.get("ops") or []] if msg["name"] == "batch.run" else None
+        return Journal(msg["callId"], msg["name"], comp=a.get("comp"), children=kids)
+    except Exception:  # noqa: a full disk must not stop Resolve work
+        return None
+
+
+def close_journal(ctx, ok):
+    j, ctx.journal = getattr(ctx, "journal", None), None
+    if j is not None:
+        try:
+            j.close(ok)
+        except Exception:  # noqa
+            pass
+
+
+def jot(ctx, fn, *a, **kw):
+    """Write one journal line if there is a journal; journal trouble never breaks the operation."""
+    j = getattr(ctx, "journal", None)
+    if j is not None:
+        try:
+            return getattr(j, fn)(*a, **kw)
+        except Exception:  # noqa
+            return None
 
 
 def ui_check(ctx):
@@ -78,10 +115,29 @@ def ui_check(ctx):
                        "render.frame/range is still rendering, render.cancel aborts it and restores the comp.")
 
 
-def run_op(ctx, name, args, in_batch=False):
+def run_op(ctx, name, args, in_batch=False, step=False):
+    """step: journal this call as step 0 (a single op; batch.run journals its own steps)."""
     from .ops import OPS
-    from .ops.base import OpError
+    from .ops.base import OpError, jv
     op = OPS[name]
+    if step:
+        jot(ctx, "start", 0, name, args)
+    try:
+        res = _run_op(ctx, op, name, args, in_batch)
+    except OpError as e:
+        if step:
+            jot(ctx, "end", 0, False, error={"code": e.code, "message": e.message})
+        raise
+    except Exception as e:  # noqa
+        if step:
+            jot(ctx, "end", 0, False, error={"code": "OPERATION_FAILED", "message": f"{type(e).__name__}: {e}"})
+        raise
+    if step:
+        jot(ctx, "end", 0, True, result=jv(res) if not isinstance(res, dict) else res)
+    return res
+
+
+def _run_op(ctx, op, name, args, in_batch):
     if op.offline:
         return op.fn(args)
     if op.ui:
@@ -98,18 +154,50 @@ def run_op(ctx, name, args, in_batch=False):
     group = op.undo and not op.read and not in_batch
     if group:
         comp.StartUndo("use-fusion " + name)
+        jot(ctx, "undo", "open")
     try:
         return op.fn(ctx, comp, args)
     finally:
         if group:
             comp.EndUndo(op.undo is True)
+            jot(ctx, "undo", "closed")
 
 
-def run_batch(ctx, comp, children, stop):
-    """children were validated/policy-checked by the server; rejected ones carry 'rejected'."""
+def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None):
+    """children were validated/policy-checked by the server; rejected ones carry 'rejected'.
+    atomic [issue #2]: stop at the first failure, undo the batch's undo group and verify the comp against the snapshot taken
+    before the first step. snapshot: 'count' (default) or 'names' (also every tool name; atomic batches take names)."""
+    from .ops import OPS
     from .ops.base import OpError, jv
+    if atomic:
+        bad, rejected = [], []
+        for i, ch in enumerate(children):
+            if ch.get("rejected"):
+                rejected.append({"index": i, "operation": ch.get("operation"), "error": ch["rejected"]})
+                continue
+            op = OPS.get(ch.get("operation"))
+            if op is None or op.read:
+                continue
+            if not op.comp or not op.undo or (ch.get("args") or {}).get("comp") not in (None, "", "current", ref):
+                bad.append({"index": i, "operation": ch["operation"]})
+        if rejected:   # it would fail at that step anyway: refuse before touching the comp
+            raise OpError("INVALID_ARGS", "atomic batch refused before any change: " + "; ".join(
+                "ops[%d]: %s" % (r["index"], (r["error"] or {}).get("message", "rejected")) for r in rejected),
+                hint="Fix the rejected steps and send the batch again.", details={"rejected": rejected})
+        if bad:
+            raise OpError("INVALID_ARGS", "atomic batches can only hold changes that one comp undo reverts: "
+                          + ", ".join("ops[%d] %s" % (b["index"], b["operation"]) for b in bad),
+                          hint="Run timeline, project and Deliver operations (and steps on another comp) outside the atomic batch.",
+                          details={"notUndoable": bad})
+        stop = True
+    snap = jot(ctx, "snapshot", comp, names=atomic or snapshot == "names")
+    if snap is None and atomic:   # no journal: the rollback still needs its baseline
+        from .journal import take_snapshot
+        snap = take_snapshot(comp, names=True)
+    snap = snap or {}
     results, failed, stopped, inline = [], 0, False, []
     comp.StartUndo("use-fusion batch.run")
+    jot(ctx, "undo", "open")
     try:
         for i, ch in enumerate(children):
             if stopped:
@@ -120,31 +208,97 @@ def run_batch(ctx, comp, children, stop):
                 results.append({"index": i, "ok": False, "operation": ch.get("operation"), "error": ch["rejected"]})
                 stopped = stop
                 continue
+            jot(ctx, "start", i, ch["operation"], ch.get("args") or {})
             try:
                 res = run_op(ctx, ch["operation"], ch.get("args") or {}, in_batch=True)
                 if isinstance(res, dict) and res.get("_inline"):  # [rebuild F4/W7] children's previews reach the caller
                     inline += res.pop("_inline")
+                jot(ctx, "end", i, True, result=res)
                 results.append({"index": i, "ok": True, "operation": ch["operation"], "result": res})
             except OpError as e:
                 failed += 1
+                jot(ctx, "end", i, False, error={"code": e.code, "message": e.message})
                 results.append({"index": i, "ok": False, "operation": ch["operation"],
                                 "error": {"code": e.code, "message": e.message, "hint": e.hint, "details": jv(e.details)}})
                 stopped = stop
             except Exception as e:  # noqa
                 failed += 1
+                jot(ctx, "end", i, False, error={"code": "OPERATION_FAILED", "message": str(e)})
                 results.append({"index": i, "ok": False, "operation": ch["operation"], "error": {"code": "OPERATION_FAILED", "message": str(e)}})
                 stopped = stop
     finally:
         comp.EndUndo(True)
+        jot(ctx, "undo", "closed")
     out = {"results": results, "count": len(results), "failed": failed}
+    if getattr(ctx, "journal", None) is not None:
+        out["callId"] = ctx.journal.id
     if inline:
         out["previews"] = inline
         out["_inline"] = inline[:8]
+    if failed and atomic:
+        bad_ix = next(r["index"] for r in results if r.get("ok") is False)
+        created = created_names([r.get("result") for r in results if r.get("ok")])
+        mutated = [r["index"] for r in results if r.get("ok") and not OPS[r["operation"]].read]
+        same, ev, _ = diff_against(comp, snap)
+        if mutated or not same:
+            comp.Undo(1)
+            rb = verify_against(comp, snap, created)
+            msg = "atomic batch: step %d failed, so the whole batch was undone (%s)" % (
+                bad_ix, "verified" if rb["verified"] else "NOT verified: check the comp")
+            hint = ("Fix the failing step and run the batch again." if rb["verified"] else
+                    "The comp does not match the snapshot taken before the batch: inspect details.rollback before going on.")
+        else:   # nothing shows a change: an undo group that recorded none may not be an undo event, so Undo(1) could revert an earlier one
+            rb = {"rolledBack": False, "verified": True, "evidence": ev,
+                  "note": "no step finished and the tool list matches the snapshot, so nothing was undone"}
+            msg = "atomic batch: step %d failed before any step finished; the tool list matches the snapshot, so nothing was undone" % bad_ix
+            hint = ("If step %d set input values before it failed, check its tools with tool.info (one comp.undo reverts them). "
+                    "Otherwise fix the step and run the batch again." % bad_ix)
+        jot(ctx, "write", dict({"t": "rollback"}, **rb))
+        out["rollback"] = rb
+        raise OpError("OPERATION_FAILED", msg, details=out, hint=hint)
     if failed:
         raise OpError("OPERATION_FAILED", f"{failed} of {len(results)} batch operations failed; completed ones were NOT rolled back "
-                      "(one comp.undo reverts the whole batch)", details=out,
+                      "(one comp.undo reverts the whole batch, or pass atomic: true)", details=out,
                       hint="Inspect details.results (input order) before retrying only the failed children.")
     return out
+
+
+def created_names(results):
+    """Tool names finished steps report they created (results' created/added/pasted lists, tool.add's name)."""
+    out = []
+    for r in results:
+        if not isinstance(r, dict):
+            continue
+        for k in ("created", "added", "pasted"):
+            v = r.get(k)
+            if isinstance(v, str):
+                out.append(v)
+            elif isinstance(v, (list, tuple)):
+                out += [x for x in v if isinstance(x, str)]
+    return list(dict.fromkeys(out))
+
+
+def diff_against(comp, snap):
+    """The comp against a journal snapshot: (same, evidence, compared). Tool count, and names when the snapshot has them."""
+    tools = comp.GetToolList(False) or {}
+    ev = {"toolsBefore": snap.get("tools"), "toolsNow": len(tools)}
+    same = snap.get("tools") is None or len(tools) == snap["tools"]
+    if "names" in snap:
+        now = sorted(t.GetAttrs()["TOOLS_Name"] for t in tools.values())
+        ev["added"] = sorted(set(now) - set(snap["names"]))[:20]
+        ev["removed"] = sorted(set(snap["names"]) - set(now))[:20]
+        same = same and not ev["added"] and not ev["removed"]
+    return same, ev, snap.get("tools") is not None or "names" in snap
+
+
+def verify_against(comp, snap, created):
+    """Did the comp go back to the snapshot? Tool count, names when the snapshot has them, and no created tool left.
+    verified is None when there was nothing to compare (no snapshot, no created names)."""
+    same, ev, compared = diff_against(comp, snap)
+    left = [n for n in created if comp.FindTool(n) is not None]
+    if created:
+        ev["createdStillThere"] = left[:20]
+    return {"rolledBack": True, "verified": (same and not left) if compared or created else None, "evidence": ev}
 
 
 # ---------------------------------------------------------------- non-op tool calls
@@ -163,7 +317,7 @@ RULES = [
     "Heavy branches in the build loop: freeze while you still edit upstream (constant-SourceTime TimeStretcher, follows edits, -27 %); once a branch is locked, cache.to_disk renders it once and reads it back through a Loader (-42 % vs live, pixel-identical) but it is STALE after any edit above it: cache.status, render.* warnings and deliver.start say so; cache.refresh or cache.restore. Resolve's own Cache To Disk writes nothing from scripting.",
     "Multi-scene films: ONE culled comp on one clip (scene.build film: true, or per-scene Merges trimmed to their frames = the film ladder): 33 % faster than per-scene clips, pixel-identical. Trim at the consuming Merge, never a Renderer3D/generator (silent black frames); check with comp.lint_regions. A Dissolve or Merge at 0 still cooks its inputs; only a trim culls. Watch system.memory (grows with scenes rendered; restart between heavy phases).",
     "Bulk work: setting.paste is quiet above 50 tools (counts + sample), comp.clear wipes a comp in one call, rewireExternal reconnects pasted wires to existing tools; batch.run takes path: ops.json.",
-    "Every mutating fu_do call is ONE undo event (batch.run included, no automatic rollback); comp.undo reverts it.",
+    "Every mutating fu_do call is ONE undo event (batch.run included; atomic: true undoes the whole batch on any failure); comp.undo reverts it.",
     "A timeout means uncertain completion: re-read state (fu_comp_info / tool.info) before retrying a mutation.",
     "Name tools semantically (letters/digits/underscore); expressions reference tools by name.",
 ]

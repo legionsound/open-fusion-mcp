@@ -160,6 +160,7 @@ class Graph:
 
     def __init__(self):
         self.t, self.order = {}, []
+        self.lower = {}       # Fusion tool names are case-insensitive: lower-case name -> the name in use
         self.underlays = []   # house-style backdrops (fusion_connector.layout boxes): emitted with the whole graph only
 
     def add(self, name, reg, inputs=None, pos=None, **kw):
@@ -167,7 +168,13 @@ class Graph:
             raise SceneError("INVALID_ARGS", f"tool name '{name}' is not an identifier")
         if name in self.t:
             raise SceneError("INVALID_ARGS", f"duplicate tool name '{name}'", hint="layer ids must be unique within a scene")
+        other = self.lower.get(name.lower())
+        if other is not None:   # Fusion would rename one on paste (*_1) and every rebuild would leave an orphan copy
+            raise SceneError("INVALID_ARGS", f"tool names '{other}' and '{name}' differ only by case; Fusion tool names are case-insensitive",
+                             hint="rename one of the layer ids behind them: ids that differ only by case ('tl_mt'/'tl_Mt') collide, and so do "
+                                  "the ids bg, ctrl, out and r3d with the builder's own <scene>_BG, _CTRL, _Out and _R3D tools")
         self.t[name] = dict(reg=reg, inputs=dict(inputs or {}), pos=pos, **kw)
+        self.lower[name.lower()] = name
         self.order.append(name)
         return name
 
@@ -3239,7 +3246,11 @@ class Compiler:
                 self.decisions.append("%s: 3D texture %dx%d (%.3gx of design px: largest on-screen size)" % (L["id"], src.W, src.H, k / space.k))
             img = src.name
             if self.eff["hold"] and src.animated:
-                hn = src.name + "_Hold"
+                hn, n2 = src.name + "_Hold", 2
+                # a group whose last child is an animated group: the child's own 2D hold already took this name with a
+                # different input (the 3D card then showed only the child); never reuse a hold of another source
+                while hn in self.g.t and self.g.t[hn]["inputs"].get("Input") != Src(src.name):
+                    hn, n2 = "%s_Hold%d" % (src.name, n2), n2 + 1
                 if hn not in self.g.t:
                     self.g.add(hn, "TimeStretcher", {"Input": Src(src.name), "SourceTime": Expr("floor(time + 0.5)", 0),
                                                      "InterpolateBetweenFrames": 0}, pos=(self.cur_col, self.cur_y + 0.5))
@@ -3782,10 +3793,8 @@ def preview(c, frames, width=480, path=None, cols=None):
             bg = body.get("background")
             if bg is not None:
                 _rrect(d, P(0, 0), P(*c.group_size(L)), float(L.get("radius") or 0) * k, fill=rgba(bg))
-            for C in body.get("layers") or []:
-                if C["type"] in ("null", "camera", "light") or c.is3d(C) or (C["id"] in c.mattes and not C.get("visible")):
-                    continue
-                place(im, C, t, k, lambda x, y: P(x, y), 1.0)
+            gw, gh = c.group_size(L)
+            stack(im, body.get("layers") or [], t, k, P, Space(gw, gh, gw / 2.0, gh / 2.0, 1.0, gw, gh))
         return im, (x0, y0)
 
     def place(canvas, L, t, k, to_px, base_op):
@@ -3815,21 +3824,13 @@ def preview(c, frames, width=480, path=None, cols=None):
             layer.putalpha(layer.getchannel("A").point(lambda v: int(v * op)))
         canvas.alpha_composite(layer)
 
-    for t in frames:
-        img = Image.new("RGBA", (int(c.W * sc), int(c.H * sc)), rgba(c.desc.get("background") or "#000000"))
-        cards = []
-        for L in c.desc["layers"]:
-            if L["type"] in ("null", "camera", "light") or (L["id"] in c.mattes and not L.get("visible")):
-                continue
-            if c.is3d(L):
-                cards.append(L)
-                continue
-            place(img, L, t, sc, lambda x, y: (x * sc, y * sc), 1.0)
-        cam = next((L for L in c.desc["layers"] if L["type"] == "camera"), None)
-        space = Space(c.W, c.H, c.W / 2.0, c.H / 2.0, 1.0, c.W, c.H)
-        dr = ImageDraw.Draw(img)
+    def cards3d(canvas, layers, cam, space, t, k, to_px):
+        """One 3D block: its cards far to near, projected through cam in the container's px (space), onto canvas via to_px."""
+        import numpy as np
         order = []
-        for L in cards:
+        for L in layers:
+            if L["id"] in c.mattes and not L.get("visible"):
+                continue
             box = c.box(L) if L["type"] != "group" else [0, 0] + list(c.group_size(L))
             q = c.card_screen(L, cam, t, space, box)
             if any(p is None for p, _ in q):
@@ -3840,24 +3841,39 @@ def preview(c, frames, width=480, path=None, cols=None):
             op = c.sval(c.prop_at(L, "opacity", t, L.get("opacity", 100))) / 100.0
             if not (a0 <= t < b0) or op <= 0:
                 continue
-            k = max(0.05, math.hypot(q[1][0][0] - q[0][0][0], q[1][0][1] - q[0][0][1]) / max(1.0, box[2] - box[0])) * sc
-            im, (x0, y0) = draw_layer(L, t, k)
-            dst = [(p[0] * sc, p[1] * sc) for p, _ in q]   # tl, tr, bl, br of the box
-            src = [((box[0] - x0) * k, (box[1] - y0) * k), ((box[2] - x0) * k, (box[1] - y0) * k),
-                   ((box[0] - x0) * k, (box[3] - y0) * k), ((box[2] - x0) * k, (box[3] - y0) * k)]
+            kk = max(0.05, math.hypot(q[1][0][0] - q[0][0][0], q[1][0][1] - q[0][0][1]) / max(1.0, box[2] - box[0])) * k
+            im, (x0, y0) = draw_layer(L, t, kk)
+            dst = [to_px(*p) for p, _ in q]   # tl, tr, bl, br of the box
+            src = [((box[0] - x0) * kk, (box[1] - y0) * kk), ((box[2] - x0) * kk, (box[1] - y0) * kk),
+                   ((box[0] - x0) * kk, (box[3] - y0) * kk), ((box[2] - x0) * kk, (box[3] - y0) * kk)]
             A, B = [], []
             for (u, v), (x, y) in zip(dst, src):
                 A += [[u, v, 1, 0, 0, 0, -x * u, -x * v], [0, 0, 0, u, v, 1, -y * u, -y * v]]
                 B += [x, y]
-            import numpy as np
             try:
                 co = np.linalg.solve(np.array(A, float), np.array(B, float))
             except np.linalg.LinAlgError:
                 continue
-            layer = im.transform(img.size, Image.PERSPECTIVE, tuple(co), resample=Image.BILINEAR)
+            layer = im.transform(canvas.size, Image.PERSPECTIVE, tuple(co), resample=Image.BILINEAR)
             if op < 1:
                 layer.putalpha(layer.getchannel("A").point(lambda v, o=op: int(v * o)))
-            img.alpha_composite(layer)
+            canvas.alpha_composite(layer)
+
+    def stack(canvas, layers, t, k, to_px, space):
+        """Bottom to top in split_3d blocks, as the build composites them: a 2D layer above a 3D block covers it [open-fusion-mcp#11]."""
+        for blk in c.split_3d(layers):
+            if blk["kind"] == "3d":
+                cards3d(canvas, blk["layers"], blk["camera"], space, t, k, to_px)
+                continue
+            for L in blk["layers"]:
+                if L["type"] != "null" and not (L["id"] in c.mattes and not L.get("visible")):
+                    place(canvas, L, t, k, to_px, 1.0)
+
+    root = Space(c.W, c.H, c.W / 2.0, c.H / 2.0, 1.0, c.W, c.H)
+    for t in frames:
+        img = Image.new("RGBA", (int(c.W * sc), int(c.H * sc)), rgba(c.desc.get("background") or "#000000"))
+        stack(img, c.desc["layers"], t, sc, lambda x, y: (x * sc, y * sc), root)
+        dr = ImageDraw.Draw(img)
         dr.text((6, 4), "f%s" % _num(t), fill=(255, 255, 0, 255))
         sx0, sy0, sx1, sy1 = c.safe_rect(c.W, c.H)
         dr.rectangle([sx0 * sc, sy0 * sc, sx1 * sc, sy1 * sc], outline=(255, 255, 255, 60))

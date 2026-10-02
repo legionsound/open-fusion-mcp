@@ -1506,6 +1506,18 @@ def _stale_caches(ctx, p, ids):
     return out
 
 
+def start_failed(ids, jobs):
+    """StartRendering returned False: name what is known to cause it [live, explainer r12: a job added in the same script call
+    that loaded the project never started, and Render All did nothing; re-adding it in a new call and starting it in another worked]."""
+    found = [j.get("JobId") for j in jobs]
+    missing = [i for i in ids if i not in found]
+    return OpError("OPERATION_FAILED", "StartRendering returned False",
+                   hint=("Not in the render queue: %s (deliver.list_jobs). " % ", ".join(missing) if missing else "")
+                   + "Known cause: a job added in the same script call that loaded the project does not start (Render All does "
+                     "nothing either). Remove it (deliver.remove_job), add it again in a new call (deliver.add_job), then start it "
+                     "in another call.", details={"jobIds": ids, "found": found})
+
+
 @op("deliver.start", "Start rendering jobs named by jobIds (required; all: true starts every queued job). Refuses to overwrite an existing output file unless overwrite: true [2026-09-27: a bare start ran a stale queued job and overwrote a verified MP4]. Preflight: comps on the job's timeline whose connector renders measured 20+ s per frame are listed, and 60+ s refuses without confirm: true; a STALE disk cache (cache.*) on the timeline refuses without confirm: true [live, gapfix pass: stopping a Deliver stuck in one slow frame kept Resolve rendering ~8 min, then Resolve crashed]. wait: poll until done (bounded by the call timeout). While it renders, poll deliver.status; deliver.stop cancels between frames only in effect.",
     [P("jobIds", "array", "Job IDs to start (required unless all: true)."), P("all", "boolean", "Start every queued job."),
      P("overwrite", "boolean", "Allow jobs whose output file already exists."), P("wait", "boolean", "Block until finished."),
@@ -1546,7 +1558,7 @@ def deliver_start(ctx, a):
                       details={"staleCaches": stale})
     ok = p.StartRendering(ids) if ids else p.StartRendering()
     if not ok:
-        raise OpError("OPERATION_FAILED", "StartRendering returned False")
+        raise start_failed(ids, jobs)
     ctx.__dict__.setdefault("deliver_started", {}).update({j: time.time() for j in ids} or {"*": time.time()})
     if a.get("wait"):
         while p.IsRenderingInProgress():
@@ -2188,13 +2200,27 @@ def eval_lua(ctx, comp, a):
 
 # ================================================================ batch
 
-@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. Not transactional: completed children stay when a later one fails (no automatic rollback); set stopOnError to stop at the first failure. Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
-    [COMP(), P("ops", "array", "[{operation, args}] in order."),
+@op("batch.run", "Run several operations in ONE call and ONE undo group on the batch comp (a single comp.undo reverts them). Children are validated and policy-checked like top-level calls. By default not transactional: completed children stay when a later one fails; set stopOnError to stop at the first failure, or atomic to undo the whole batch on any failure (verified against a snapshot). Every step is journaled: if Resolve stops answering, the TIMEOUT reply carries a receipt (finished, running, never started) and batch.recover / batch.rollback pick up from it; to finish such a batch, send the same ops again with resume: callId (finished steps are skipped, nothing is duplicated). Read/verify children (comp.info, tool.info, render.frame) can ride along; their inline previews come back with the batch (first 8 as images, all paths in previews). comp.undo/redo cannot. timeoutMs covers the whole batch (pass it on fu_do).",
+    [COMP(), P("ops", "array", "[{operation, args}] in order ({op, args} also works)."),
      P("path", "string", "Absolute path of a JSON file holding the ops list (or {ops: [...]}) instead of ops: for long generated batches."),
-     P("stopOnError", "boolean", "Stop at the first failure (default false).")],
+     P("stopOnError", "boolean", "Stop at the first failure (default false)."),
+     P("atomic", "boolean", "All or nothing: on the first failure undo the whole batch and verify the comp matches the snapshot taken before it "
+                            "(tool count, names up to FUSION_MCP_SNAPSHOT_LIMIT tools, created tools gone). Only comp changes one undo reverts "
+                            "may ride along (reads too); timeline, project and Deliver operations are refused up front. Default false."),
+     P("snapshot", "string", "Comp snapshot journaled before the first step: count (default, cheap) or names (every tool name, one call per "
+                             "tool; lets batch.recover list added/removed tools after a timeout). Atomic batches take names.",
+       enum=("count", "names")),
+     P("resume", "string", "callId of an unfinished batch.run (from its TIMEOUT receipt) to finish: send the same ops; the steps that "
+                           "finished are skipped (their args must be unchanged), the rest run, and the comp is read back so every "
+                           "intended tool exists once (Fusion would rename a repeated one Title_1). Keeps the finished steps."),
+     P("uncertain", "string", "With resume: what to do with a step that was running (or failed) and may have partly applied. check "
+                              "(default): re-run it only when none of its target tools exist (a step that names no tools, like a "
+                              "paste: only when the comp holds no tools the finished steps do not explain), else refuse; skip; rerun.",
+       enum=("check", "skip", "rerun"))],
     read=True, undo=False)
 def batch_run(ctx, comp, a):
-    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")))
+    return ctx.run_batch(comp, a["ops"], bool(a.get("stopOnError")), atomic=bool(a.get("atomic")), snapshot=a.get("snapshot"), ref=a.get("comp"),
+                         resume=a.get("resume"), uncertain=a.get("uncertain") or "check")
 
 
 _BUILDER_ERR = register_builders()

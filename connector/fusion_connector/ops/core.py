@@ -395,7 +395,7 @@ def timeline_create(ctx, a):
     return out
 
 
-@op("timeline.set_format", "Set a timeline's own resolution and/or frame rate (useCustomSettings + timelineResolutionWidth/Height + timelineFrameRate, read back). Resolve locks the frame rate once the timeline holds clips.",
+@op("timeline.set_format", "Set a timeline's own resolution and/or frame rate (useCustomSettings + timelineResolutionWidth/Height + timelineFrameRate, read back). Resolve locks the frame rate once the timeline holds clips. Existing Fusion clips keep their size (timeline.add_fusion_clip makes one at the new size).",
     [P("timeline", "string", "Timeline (default current)."), P("width", "integer", "Width px."), P("height", "integer", "Height px."),
      P("fps", "number", "Frame rate.")], comp=False)
 def timeline_set_format(ctx, a):

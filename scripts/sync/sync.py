@@ -31,7 +31,8 @@ import audit  # noqa: E402
 CONNECTOR = [                                   # relative to CONNECTOR_SRC; a trailing /** copies a folder
     "fusion_connector/**", "bin/fusion-connector", "bin/use-fusion-mcp", "requirements.txt", "PARITY.md",
     "scripts/parity.py",
-    "tests/test_offline.py", "tests/test_layout.py", "tests/client.py", "tests/smoke.py", "tests/smoke_results.json",
+    "tests/test_offline.py", "tests/test_layout.py", "tests/test_catalog_tools.py", "tests/test_receipts.py", "tests/test_diagnostics.py",
+    "tests/client.py", "tests/smoke.py", "tests/smoke_results.json", "tests/receipts_live.py",
     "tests/cache_live.py", "tests/layout_live.py", "tests/sb3_live.py", "tests/luajit.py", "tests/scenes/*.json",
     "tests/scenes/*.png",
 ]

@@ -123,8 +123,33 @@ def suggest(key, candidates):
     return best if dist <= max(1, int(max(len(key), len(best)) * 0.4)) else None
 
 
+def json_schema(params):
+    """JSON Schema object for declared params: the inputSchema of the dedicated tools and fu_catalog, so it cannot drift."""
+    props = {}
+    for p in params:
+        t = [] if p.type == "any" else p.type.split("|") + (["null"] if p.nullable else [])
+        s = {"type": t[0] if len(t) == 1 else t} if t else {}
+        s["description"] = p.desc
+        if p.enum:
+            s["enum"] = list(p.enum) + ([None] if p.nullable else [])
+        if p.default is not None:
+            s["default"] = p.default
+        props[p.name] = s
+    req = [p.name for p in params if p.required]
+    return {"type": "object", "properties": props, **({"required": req} if req else {}), "additionalProperties": False}
+
+
 def summarize(params):
-    return [f"{p.name}: {p.type} ({'required' if p.required else 'optional'})" for p in params]
+    """One line per parameter for error replies [issue #13]: name, type, required, allowed values, default."""
+    def extra(p):
+        out = []
+        if p.enum:
+            vals = [str(v) for v in p.enum]
+            out.append("one of " + "|".join(vals[:12]) + ("|..." if len(vals) > 12 else ""))
+        if p.default is not None:
+            out.append("default %s" % p.default)
+        return "".join(", " + x for x in out)
+    return [f"{p.name}: {p.type} ({'required' if p.required else 'optional'}{extra(p)})" for p in params]
 
 
 def validate(op, raw):

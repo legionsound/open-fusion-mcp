@@ -11,7 +11,8 @@ what board builds hit.
   `.setting` paste for whole groups (notes, cursors, panels) on the Fusion-page comp; `fusion_kit.py`
   helpers. No route runs arbitrary code "to get around" a failing call: find why it failed.
 - A multi-call build is not a transaction (realities §15). After an uncertain result, inspect the comp
-  (`FindTool` for planned names, wiring, keys) before retrying.
+  (`FindTool` for planned names, wiring, keys) before retrying; for a connector batch, read its receipt and
+  finish it with `resume` rather than sending it again.
 - When a return value lacks the detail you need (`AddModifier` returns, `Render` True), read the state
   directly: `GetConnectedOutput`, `GetKeyFrames`, `GetInput` at two frames, the rendered file.
 - Paste board groups with a unique prefix per paste; a collision renames `_1` and rewrites inner

@@ -180,11 +180,11 @@ Pick whatever is fastest and most reliable for each step and mix freely inside o
 thumb: fewest calls, least risk. None of these is the "real" path with the others as fallbacks.
 
 - **use-fusion connector** (`fu_*`; entry skill `use-fusion`): fast validated ops with readback,
-  `batch.run` (one undo event, not transactional), `.setting` paste with quiet output, builders
+  `batch.run` (one undo event; `atomic: true` all or nothing), `.setting` paste with quiet output, builders
   (`builder.*`), one-call render and inspect (`fu_render_frame`, `render.contact_sheet`,
   `audit.motion`, optional `render.compare`), Deliver status/stop, memory (`system.memory`,
   `system.purge_cache`), and safety rails (serialized calls, render-modal dismissal, project
-  allowlist, timeouts reported as uncertain completion).
+  allowlist, timeouts answered with a step receipt plus `batch.recover`, `batch.rollback` and `resume`).
 - **Official Resolve MCP** (`DaVinci_Resolve` / `DaVinci_Resolve_Studio`): the full Resolve API
   through `run_script` (sandboxed Python with `resolve`/`project`) and `run_script_unsafe` (files):
   Edit, Color, Fairlight, Media Pool, Deliver, anything the catalog lacks, or one script that beats

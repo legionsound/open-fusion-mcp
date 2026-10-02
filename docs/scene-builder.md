@@ -41,8 +41,32 @@ Give each scene a `start` frame and build with `film: true`: each scene joins a 
 frames, so only the active scene cooks. On the benchmark ad the same ladder built by hand (3,244 tools, one paste)
 Delivered in 14.6 min against 21.9 min as eight per-beat clips, with identical frames.
 
+## Tool names
+
+Layer ids become tool names (`<scene>_<id>`, plus suffixes such as `_Fill`), and Fusion tool names are
+case-insensitive: a paste treats `S1_tl_mt` and `S1_tl_Mt` as one name and renames one of them with a `_1`
+suffix. The builder therefore rejects a description whose tool names collide when case is ignored, and names
+both tools, so `scene.plan` catches the problem offline. Two cases to know:
+
+- ids that differ only by case, such as `tl_mt` and `tl_Mt`;
+- the ids `bg`, `ctrl`, `out` and `r3d`, which collide with the builder's own `<scene>_BG`, `<scene>_CTRL`,
+  `<scene>_Out` and `<scene>_R3D` tools.
+
+The ids `BG`, `Out`, `CTRL` and `Camera`, and ids that start with `R3D` or `A_`, are reserved outright.
+
+## Frame size
+
+A comp on a carrier clip (the kind `timeline.add_fusion_clip` makes) keeps the carrier's frame size, and
+changing the timeline's format (`timeline.set_format`) does not resize Fusion clips already on the timeline.
+After a timeline was switched from 1920x1080 to 1080x1920, its existing comp stayed 1920x1080 and the film
+ladder cropped the vertical scene. `scene.build` warns when the comp's size differs from the scene's: make a new
+clip with `timeline.add_fusion_clip` on a timeline of the scene's size (its carrier is made at the timeline's
+size) and build there.
+
 ## Limits today
 
-`image` layers, 2.5D mode, the film ladder through `film: true`, light rigs and 3D parent rigs are not yet
-verified live. No video media layer yet, one text animator per text layer, and no built-in backdrop blur,
-dashed or tapered strokes (build those by hand).
+`image` layers, 2.5D mode, light rigs and 3D parent rigs are not yet verified live, and image layers can come in
+empty or at the wrong size until each Loader is re-read and its Merge rescaled
+([#10](https://github.com/legionsound/open-fusion-mcp/issues/10)). The film ladder (`film: true`) is verified
+live. No video media layer yet, and one text animator per text layer. Backdrop blur (`glass`), dashed and
+tapered strokes (`stroke.dash`, `stroke.taper`) and size-animation motion blur are built in.

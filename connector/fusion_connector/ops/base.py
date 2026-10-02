@@ -315,6 +315,10 @@ class Ctx:
     # -- connection
     @property
     def resolve(self):
+        fake = os.environ.get("FUSION_MCP_FAKE_RESOLVE")
+        if fake:   # offline fault-injection tests (testkit.py): a file-backed stand-in for Resolve
+            from ..testkit import FakeResolve
+            return FakeResolve(fake)
         if self._resolve is not None:
             try:
                 self._resolve.GetVersionString()
@@ -803,9 +807,9 @@ class Ctx:
             self.notes.append("paste: %d pasted names not found afterwards (%s)" % (len(missing), missing[:5]))
         return {"added": added, "renamed": renamed, "missing": missing}
 
-    def run_batch(self, comp, children, stop):
+    def run_batch(self, comp, children, stop, **kw):
         from ..worker import run_batch
-        return run_batch(self, comp, children, stop)
+        return run_batch(self, comp, children, stop, **kw)
 
     # -- ambient context (appended to every fu_do response)
     def ambient(self):

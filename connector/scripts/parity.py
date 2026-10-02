@@ -13,14 +13,14 @@ I, D, N = "implemented", "different model", "n/a"
 # AE op -> (status, fusion op(s) or "", note)
 MAP = {
     # batch / command
-    "batch.run": (I, "batch.run", "one call, one undo event (StartUndo/EndUndo on the batch comp), children validated like top-level calls, no automatic rollback"),
+    "batch.run": (I, "batch.run", "one call, one undo event (StartUndo/EndUndo on the batch comp), children validated like top-level calls; atomic: true undoes it all on a failure, resume finishes a timed-out batch"),
     "command.execute": (I, "command.execute", "Fusion actions (comp:DoAction) instead of AE menu command IDs"),
     "command.find": (I, "command.find", "searches Fusion ActionManager actions"),
     "command.list": (I, "command.list", ""),
     # comp
     "comp.create": (D, "comp.create, timeline.create, timeline.add_fusion_clip", "a Fusion comp lives on a timeline clip: new Fusion Composition clip, AddFusionComp on an item (any track), or an exact-length Fusion item on any track (black carrier)"),
     "comp.set_label": (D, "tool.set_attrs (tileColor)", "comps have no label color; node tile colors are the Fusion equivalent"),
-    "comp.set_props": (D, "comp.set_format, comp.set_render_range, pref.set, timeline.set_format", "comp properties are prefs (Comp.FrameFormat...) and attrs; the timeline format sets a Fusion clip's size and rate; bg color = a Background tool"),
+    "comp.set_props": (D, "comp.set_format, comp.set_render_range, pref.set, timeline.set_format", "comp properties are prefs (Comp.FrameFormat...) and attrs; the timeline format sets the size and rate of Fusion clips made after it; bg color = a Background tool"),
     "comp.set_renderer": (D, "3d.add_renderer (rendererType)", "3D rendering is a Renderer3D node (Software/OpenGL/OpenGLUV), not a comp setting"),
     "comp.list_renderers": (D, "effect.inputs {regId: Renderer3D}", "RendererType options come from the live TSV"),
     "comp.set_work_area": (I, "comp.set_render_range", "render range = work area; global range follows the clip length"),

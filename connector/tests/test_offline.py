@@ -2766,7 +2766,7 @@ class SB3FreezeGuard(unittest.TestCase):
     loses its EffectMask)."""
 
     SCENE = {"scene": "M", "size": [1920, 1080], "fps": 30, "duration": 30, "layers": [
-        {"id": "bg", "type": "solid", "color": "#222222"},
+        {"id": "bgfill", "type": "solid", "color": "#222222"},
         {"id": "wipe", "type": "ellipse", "size": [400, 400], "fill": "#FFFFFF", "keys": {"position": [[0, [200, 540]], [20, [1700, 540]]]}},
         {"id": "grp", "type": "group", "size": [800, 400], "keys": {"position": [[0, [900, 540]], [20, [1000, 540]]]},
          "layers": [{"id": "g1", "type": "rect", "size": [800, 400], "fill": "#FFFFFF"},
@@ -2781,7 +2781,7 @@ class SB3FreezeGuard(unittest.TestCase):
         c = comp(json.loads(json.dumps(self.SCENE)))
         self.assertEqual(sg.mask_freezes(c.g), [])
         frz = [n for n, r in c.g.t.items() if r["reg"] == "TimeStretcher" and not isinstance(r["inputs"]["SourceTime"], sg.Expr)]
-        self.assertIn("M_bg_Freeze", frz)                                    # ordinary freezes still happen
+        self.assertIn("M_bgfill_Freeze", frz)                                # ordinary freezes still happen
         self.assertIn("M_card_Src_Freeze", frz)
         for n in ("M_wipe_Src", "M_g1", "M_g2_Src"):                          # matte image chains: never frozen
             self.assertNotIn(n + "_Freeze", c.g.t)
@@ -3223,6 +3223,85 @@ class SB3Premultiplied(unittest.TestCase):
         d2 = mini(controls={"accent": "#FF4B2B", "glassc": "#FFFFFF"})
         d2["layers"].append({"id": "g", "type": "group", "size": [100, 100], "background": "$glassc", "layers": []})
         self.assertIsInstance(comp(d2).g.t["T_g_Base"]["inputs"]["TopLeftRed"], sg.Expr)   # control colours stay live
+
+
+def _upstream(t, name, seen=None):
+    """Every tool feeding name, following Src wires."""
+    seen = set() if seen is None else seen
+    for v in t[name]["inputs"].values():
+        if isinstance(v, sg.Src) and v.op in t and v.op not in seen:
+            seen.add(v.op)
+            _upstream(t, v.op, seen)
+    return seen
+
+
+class SceneHoldNames(unittest.TestCase):
+    """[issue #6] A 3D group whose last child is an animated group: the child's own texture hold and the card's hold used to
+    share one name, so the card showed only that child (the vertical demo's Fusion-page panel showed only the timeline)."""
+
+    def scene(self):
+        cam = {"id": "cam", "type": "camera", "zoom": 1600, "position": [1100, 640, -1600], "poi": [960, 540, 0],
+               "keys": {"position": [[0, [1100, 640, -1600], "linear"], [30, [1150, 700, -1400]]],
+                        "poi": [[0, [960, 540, 0], "linear"], [30, [1000, 600, 0]]]}}
+        nep = {"id": "nep", "type": "group", "position": [960, 700], "size": [800, 300], "out": 21,
+               "layers": [{"id": "nep_bg", "type": "rect", "size": [800, 300], "fill": "#333333", "position": [400, 150]}],
+               "keys": {"position": [[10, [960, 700], "in"], [20, [2600, 700]]]}}
+        edit = {"id": "edit", "type": "group", "position": [960, 700], "size": [800, 300], "in": 9,
+                "layers": [{"id": "tl", "type": "group", "position": [400, 150], "size": [800, 300],
+                            "layers": [{"id": "tl_bg", "type": "rect", "size": [800, 300], "fill": "#202040", "position": [400, 150]}]},
+                           {"id": "ph", "type": "rect", "size": [4, 280], "fill": "#FF6A2B", "position": [100, 150],
+                            "keys": {"position": [[10, [100, 150], "linear"], [40, [700, 150]]]}}],
+                "keys": {"position": [[9, [-700, 700], "out_expo"], [20, [960, 700]]]}}
+        panel = {"id": "zpanel", "type": "group", "threeD": True, "position": [960, 540, 0], "size": [1920, 1080], "layers": [nep, edit]}
+        return {"scene": "H", "size": [1920, 1080], "fps": 30, "duration": 60, "background": "#101010", "layers": [cam, panel]}
+
+    def test_card_hold_reads_the_whole_group(self):
+        t = comp(self.scene()).g.t
+        mat = t["H_zpanel_Card"]["inputs"]["MaterialInput"].op
+        feeds = _upstream(t, mat)
+        self.assertIn("H_nep", feeds)       # the panel that whips out
+        self.assertIn("H_ph", feeds)        # and the timeline that whips in
+        for h in (n for n in t if t[n]["reg"] == "TimeStretcher"):
+            users = {x for x in t for v in t[x]["inputs"].values() if isinstance(v, sg.Src) and v.op == h}
+            self.assertLessEqual(len(users), 1, (h, users))   # one hold, one consumer: never shared between a 2D merge and a card
+
+
+class SceneCaseCollision(unittest.TestCase):
+    """[issue #7] Fusion tool names are case-insensitive: ids that differ only by case would collide on paste."""
+
+    def test_case_only_ids_are_rejected(self):
+        d = mini()
+        d["layers"] += [{"id": "tl_mt", "type": "rect", "size": [10, 10], "fill": "#FFFFFF", "position": [100, 100]},
+                        {"id": "tl_Mt", "type": "rect", "size": [10, 10], "fill": "#FFFFFF", "position": [200, 100]}]
+        with self.assertRaises(sg.SceneError) as cm:
+            comp(d)
+        self.assertIn("differ only by case", cm.exception.message)
+        self.assertIn("T_tl_mt", cm.exception.message)
+
+    def test_distinct_ids_still_compile(self):
+        d = mini()
+        d["layers"] += [{"id": "tl_mt", "type": "rect", "size": [10, 10], "fill": "#FFFFFF", "position": [100, 100]},
+                        {"id": "tl_mj", "type": "rect", "size": [10, 10], "fill": "#FFFFFF", "position": [200, 100]}]
+        self.assertIn("T_tl_mj_Fill", comp(d).g.t)
+
+    def test_reserved_ids_name_the_builder_tool(self):
+        d = mini()
+        d["layers"].insert(0, {"id": "bg", "type": "solid", "color": "#222222"})
+        with self.assertRaises(sg.SceneError) as cm:
+            comp(d)
+        self.assertIn("T_BG", cm.exception.message)
+        self.assertIn("bg, ctrl, out and r3d", cm.exception.hint)
+
+
+class DeliverStartHint(unittest.TestCase):
+    def test_start_failure_names_the_known_cause(self):
+        from fusion_connector.ops.build import start_failed
+        e = start_failed(["j1", "j2"], [{"JobId": "j1"}])
+        self.assertEqual(e.code, "OPERATION_FAILED")
+        self.assertIn("Not in the render queue: j2", e.hint)
+        self.assertIn("same script call that loaded the project", e.hint)
+        self.assertEqual(e.details, {"jobIds": ["j1", "j2"], "found": ["j1"]})
+        self.assertNotIn("Not in the render queue", start_failed(["j1"], [{"JobId": "j1"}]).hint)
 
 
 if __name__ == "__main__":

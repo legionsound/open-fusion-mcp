@@ -1,13 +1,16 @@
 """Use Fusion: local MCP server for DaVinci Resolve Fusion (mirror of Higgsfield's use-after-effects).
 
-Eleven tools: fu_get_skill, fu_get_skill_asset, fu_project_info, fu_comp_info, fu_tool_info,
-fu_render_frame, fu_comp_export, fu_version_info, fu_context, fu_catalog, fu_do.
+Fifteen tools: fu_get_skill, fu_get_skill_asset, fu_project_info, fu_comp_info, fu_tool_info,
+fu_render_frame, fu_comp_export, fu_version_info, fu_context, fu_catalog, fu_do, and the shortcuts
+fu_scene_build, fu_scene_plan, fu_batch, fu_contact_sheet (one fu_do operation each, inputSchema
+generated from its params, routed through fu_do).
 Every Resolve call goes through ONE worker process behind ONE lock, so parallel MCP calls never
 interleave inside Resolve (the AE connector let two scripts collide into a blocking modal)."""
 import asyncio
 import json
 import multiprocessing as mp
 import os
+import re
 import sys
 import threading
 import time
@@ -19,7 +22,7 @@ from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 
 from . import config
-from .schema import summarize, suggest, validate
+from .schema import Op, P, json_schema, summarize, suggest, validate
 
 RETRYABLE = {"TRANSPORT"}
 
@@ -120,6 +123,9 @@ class Bridge:
             self.conn = None
 
     def call(self, msg, timeout_s):
+        from . import journal
+        if msg.get("kind") == "op" and not msg.get("callId"):
+            msg = dict(msg, callId=journal.new_id())   # the worker journals every step under this id [issue #1]
         with self.lock:
             self._ensure()
             t0 = time.time()
@@ -127,16 +133,24 @@ class Bridge:
                 self.conn.send(msg)
                 if not self.conn.poll(timeout_s):
                     self._kill()
-                    return {"ok": False, "code": "TIMEOUT", "uncertain": True,
-                            "message": f"no answer from Resolve within {timeout_s:.0f}s; the operation MAY HAVE EXECUTED (uncertain completion)",
-                            "hint": "Re-read state (fu_comp_info / tool.info / fu_context) before doing anything else; do not blindly retry a mutation. "
-                                    "Raise timeoutMs for long renders.", "durationMs": int((time.time() - t0) * 1000)}
+                    res = {"ok": False, "code": "TIMEOUT", "uncertain": True,
+                           "message": f"no answer from Resolve within {timeout_s:.0f}s; the operation MAY HAVE EXECUTED (uncertain completion)",
+                           "hint": "Re-read state (fu_comp_info / tool.info / fu_context) before doing anything else; do not blindly retry a mutation. "
+                                   "Raise timeoutMs for long renders.", "durationMs": int((time.time() - t0) * 1000)}
+                    try:   # [issue #8] an orphan on the scripting port makes every call hang, not fail: say so
+                        from . import diag
+                        h = diag.timeout_hint()
+                        if h:
+                            res["hint"] = "Scripting port problem: %s. %s" % (h, res["hint"])
+                    except Exception:  # noqa: diagnostics never break the reply
+                        pass
+                    return with_receipt(res, msg)
                 return self.conn.recv()
             except (EOFError, BrokenPipeError, OSError) as e:
                 self._kill()
-                return {"ok": False, "code": "TRANSPORT", "uncertain": True,
-                        "message": f"Resolve worker died ({e}); the operation may have executed",
-                        "hint": "Re-read state before retrying. If Resolve crashed, reopen it."}
+                return with_receipt({"ok": False, "code": "TRANSPORT", "uncertain": True,
+                                     "message": f"Resolve worker died ({e}); the operation may have executed",
+                                     "hint": "Re-read state before retrying. If Resolve crashed, reopen it."}, msg)
 
     def close(self):
         with self.lock:
@@ -146,6 +160,21 @@ class Bridge:
                 except Exception:
                     pass
             self._kill()
+
+
+def with_receipt(res, msg):
+    """[issue #1] An uncertain reply carries the journal's receipt: what finished, what was running, what never started."""
+    from . import journal
+    cid = msg.get("callId")
+    rec = journal.reconcile(journal.read(cid)) if cid else None
+    if not rec:
+        return res
+    res = dict(res, details={"receipt": rec, "journal": journal.path_of(cid)})
+    res["message"] += ". " + rec["summary"]
+    res["hint"] = ("Before any other change, once Resolve answers: fu_do batch.recover {callId: '%s'} re-reads the comp and checks the "
+                   "uncertain step against the journal; batch.rollback {callId} undoes the call's undo group and verifies the comp "
+                   "(keep: true only closes an open group). To finish a batch instead, send the same ops with resume: '%s'. " % (cid, cid)) + res.get("hint", "")
+    return res
 
 
 BRIDGE = Bridge()
@@ -211,12 +240,13 @@ def gate(name, args, nested=False):
     good, v = validate(op, args)
     if not good:
         return None, None, {"code": "INVALID_ARGS", "message": f"invalid arguments for '{name}': " + "; ".join(f"{i['path']} - {i['message']}" for i in v),
-                            "hint": f"fu_catalog({{category: '{op.category}'}}) has the full parameter reference.",
+                            "hint": EXPECTED_HINT % name,
                             "details": {"issues": v, "expected": summarize(op.params)}}
     tsv_err = _tsv_check(op, v)
     if tsv_err:
         return None, None, {"code": "INVALID_ARGS", "message": f"invalid arguments for '{name}': {tsv_err}",
-                            "hint": "IDs come from the live-harvested registry (effect.list_available / effect.inputs)."}
+                            "hint": "IDs come from the live-harvested registry (effect.list_available / effect.inputs).",
+                            "details": {"expected": summarize(op.params)}}
     if op.consent and v.get("confirm") is not True:
         return None, None, {"code": "FORBIDDEN", "message": f"'{name}' changes state beyond the comp and runs only with confirm: true",
                             "hint": "Pass confirm: true only when the user explicitly asked for this."}
@@ -291,8 +321,10 @@ async def do(args):
             return err_result(e["code"], e["message"], e.get("hint"), e.get("details"))
         children, child_ms = [], 0
         for i, ch in enumerate(v["ops"]):
+            if isinstance(ch, dict) and "op" in ch:  # {op, args} alias; both keys at once is ambiguous
+                ch = None if "operation" in ch else {("operation" if k == "op" else k): x for k, x in ch.items()}
             if not isinstance(ch, dict) or not isinstance(ch.get("operation"), str):
-                children.append({"operation": None, "rejected": {"code": "INVALID_ARGS", "message": f"ops[{i}] must be {{operation, args}}"}})
+                children.append({"operation": None, "rejected": {"code": "INVALID_ARGS", "message": f"ops[{i}] must be {{operation, args}} (or {{op, args}})"}})
                 continue
             ca, clift = lift_timeout(ops().get(ch["operation"]), ch.get("args") or {})
             child_ms += clift or 0
@@ -312,25 +344,118 @@ async def do(args):
             return err_result(x.code, x.message, x.hint, x.details)
         except Exception as x:  # noqa
             return err_result("OPERATION_FAILED", f"{type(x).__name__}: {x}")
-    return await worker_call({"kind": "op", "name": name, "args": v, "ambient": True}, timeout_ms)
+    msg = {"kind": "op", "name": name, "args": v, "ambient": True, "policy": config.policy()}
+    res = await asyncio.to_thread(BRIDGE.call, msg, timeout_ms / 1000.0)
+    return from_worker(expect(res, op))
+
+
+EXPECTED_HINT = "details.expected lists every parameter, so fix the call and retry; fu_catalog({operation: '%s'}) has the full reference."
+
+
+def expect(res, op):
+    """[issue #13] Every INVALID_ARGS reply carries the operation's parameter list (failed batch children too), so a retry is one step."""
+    if res.get("ok"):
+        return res
+    d = res.get("details")
+    if res.get("code") == "INVALID_ARGS" and not (isinstance(d, dict) and "expected" in d):
+        res = dict(res, details=dict(d if isinstance(d, dict) else ({} if d is None else {"info": d}), expected=summarize(op.params)))
+        res["hint"] = (res.get("hint") + " " if res.get("hint") else "") + EXPECTED_HINT % op.name
+    d = res.get("details")
+    for r in (d.get("results") or []) if op.name == "batch.run" and isinstance(d, dict) else []:
+        e, co = r.get("error") or {}, ops().get(r.get("operation") or "")
+        if r.get("ok") is False and e.get("code") == "INVALID_ARGS" and co is not None:
+            ed = e.get("details")
+            if not (isinstance(ed, dict) and "expected" in ed):
+                e["details"] = dict(ed if isinstance(ed, dict) else ({} if ed is None else {"info": ed}), expected=summarize(co.params))
+    return res
+
+
+CATALOG = Op("fu_catalog", "catalog", "fu_catalog arguments", [
+    P("category", "string", "One category: full params per operation. With query: search only this category."),
+    P("operation", "string", "One operation's full reference (params, category, sibling operations), e.g. 'tool.delete'."),
+    P("query", "string", "Keyword search over operation names and descriptions, e.g. 'delete tool': the top 10 as compact rows.")])
+
+STOP = {"a", "an", "and", "as", "at", "by", "for", "from", "in", "into", "is", "it", "of", "on", "or", "the", "to", "with"}
+
+
+def words(s):
+    """Search tokens: lowercase alphanumeric runs ('.', '_' and case do not matter), plural 's' dropped, stop words out."""
+    return [w[:-1] if len(w) > 3 and w.endswith("s") else w for w in re.findall(r"[a-z0-9]+", s.lower()) if w not in STOP]
+
+
+def search(query, pool):
+    """Deterministic ranking: a query word that is a word of the name scores 3, part of the name 2, a word of the description 1."""
+    qs, hits = set(words(query)), []
+    for o in pool:
+        nw, flat = set(words(o.name)), re.sub(r"[^a-z0-9]", "", o.name.lower())
+        s = sum(3 if w in nw else 2 if len(w) > 2 and w in flat else 0 for w in qs) + len(qs & set(words(o.desc)))
+        if s:
+            hits.append((-s, o.name, o))
+    return [o for _, _, o in sorted(hits)]
+
+
+def summary(desc, n=200):
+    """First sentence ('e.g.' and 'i.e.' do not end one), cut to n chars."""
+    s = re.split(r"(?<=[.!?])(?<!e\.g\.)(?<!i\.e\.)\s", desc, maxsplit=1)[0]
+    return s if len(s) <= n else s[:n - 3].rstrip() + "..."
+
+
+def _lookup(name, O, vis):
+    op = O.get(name)
+    if op is None:
+        s = suggest(name, [o.name for o in vis])
+        return err_result("UNKNOWN_OPERATION", f"unknown operation '{name}'",
+                          (f"Did you mean '{s}'? " if s else "") + "fu_catalog({query: '<words>'}) searches names and descriptions.", {"suggestion": s})
+    denial = config.deny_op(op)
+    if denial:
+        return err_result("FORBIDDEN", denial[0], denial[1], {"operation": name, "category": op.category})
+    sc = next((t for t, o in SHORTCUTS.items() if o == name), None)
+    return ok_result({"operation": op.public(), "category": op.category, **({"shortcut": sc} if sc else {}),
+                      "siblings": sorted(o.name for o in vis if o.category == op.category and o is not op)})
+
+
+def _find(query, cat, pool, vis):
+    hits = search(query, pool)
+    if not hits:
+        vocab = sorted({w for o in pool for w in words(o.name)})
+        fixed = " ".join(suggest(w, vocab) or w for w in words(query))
+        near = [o.name for o in search(fixed, pool)[:5]]
+        return err_result("NOT_FOUND", f"no operation matches '{query}'" + (f" in category '{cat}'" if cat else ""),
+                          (f"Did you mean '{fixed}'? " if near else "") + "Or browse one category: fu_catalog({category}).",
+                          {"suggestions": near or sorted({o.category for o in vis})})
+    return ok_result({"query": query, **({"category": cat} if cat else {}), "totalMatches": len(hits),
+                      "matches": [{"name": o.name, "category": o.category, "summary": summary(o.desc),
+                                   "params": [p.name for p in o.params], "readOnly": o.read} for o in hits[:10]],
+                      "hint": "fu_catalog({operation: '<name>'}) returns one operation's full parameter reference."})
 
 
 def catalog(args):
+    good, v = validate(CATALOG, args)
+    if not good:
+        return err_result("INVALID_ARGS", "invalid fu_catalog arguments: " + "; ".join(f"{i['path']} - {i['message']}" for i in v),
+                          "fu_catalog takes category, operation or query (query may add category).", {"issues": v})
+    if "operation" in v and len(v) > 1:
+        return err_result("INVALID_ARGS", "operation looks up one operation and does not combine with " + " or ".join(k for k in v if k != "operation"),
+                          "Pass operation alone, or query (optionally with category) to search.")
     O = ops()
     vis = [o for o in O.values() if config.deny_op(o) is None]
-    cat = args.get("category")
-    if not cat:
+    if "operation" in v:
+        return _lookup(v["operation"], O, vis)
+    cat = v.get("category")
+    if not cat and "query" not in v:
         cats = {}
         for o in vis:
             cats.setdefault(o.category, []).append(o.name)
         return ok_result({"categories": [{"category": c, "operationCount": len(n), "operations": sorted(n)} for c, n in sorted(cats.items())],
                           "totalOperations": len(vis), "policy": config.policy_summary(),
+                          "hint": "fu_catalog({operation: 'tool.add'}) returns one operation's full reference; "
+                                  "fu_catalog({query: 'delete tool'}) searches names and descriptions (category narrows it).",
                           "undo": "every mutating fu_do call is ONE undo event on its comp (batch.run included); comp.undo reverts it; "
-                                  "comp.undo/redo run alone, never inside batch.run; there is no automatic rollback",
+                                  "comp.undo/redo run alone, never inside batch.run; batch.run with atomic: true undoes the whole batch on any failure",
                           "serialization": "calls are serialized through one Resolve worker; a timeout means uncertain completion: re-read state before retrying",
                           **({"note": "FUSION_MCP_READONLY=1: only read operations are listed"} if config.read_only() else {})})
-    rows = [o for o in vis if o.category == cat]
-    if not rows:
+    rows = [o for o in vis if o.category == cat] if cat else vis
+    if cat and not rows:
         hidden = [o for o in O.values() if o.category == cat]
         cats = sorted({o.category for o in vis})
         if hidden:
@@ -338,6 +463,8 @@ def catalog(args):
                               config.deny_op(hidden[0])[1], {"availableCategories": cats})
         s = suggest(cat, cats)
         return err_result("UNKNOWN_CATEGORY", f"no operations in category '{cat}'", (f"Did you mean '{s}'? " if s else "") + "Available: " + ", ".join(cats))
+    if "query" in v:
+        return _find(v["query"], cat, rows, vis)
     return ok_result({"category": cat, "operations": [o.public() for o in sorted(rows, key=lambda o: o.name)]})
 
 
@@ -346,6 +473,9 @@ def catalog(args):
 COMP_SCHEMA = {"description": "Omit (or 'current') for the Fusion-page comp; or {timeline?, track?, item?, comp?}.",
                "anyOf": [{"type": "string"}, {"type": "object", "properties": {"timeline": {"type": "string"}, "track": {"type": "integer"},
                                                                                "item": {"type": ["integer", "string"]}, "comp": {"type": ["integer", "string"]}}}]}
+
+RUN = {"timeoutMs": {"type": "integer", "minimum": 1, "description": "Per-call timeout (default 60000). Raise for renders and big batches."},
+       "dryRun": {"type": "boolean", "description": "Validate and policy-check only; nothing reaches Resolve."}}
 
 TOOLS = [
     dict(name="fu_get_skill", title="Fusion skills", effect="read", readonly_ok=True,
@@ -386,16 +516,33 @@ TOOLS = [
          description="Ambient context: project, timeline, page, current comp with tools, current clip, policy, and the live-verified Fusion rules (units, paste, keyframes, undo, timeouts). Call at session start; fu_do responses carry a lighter context.",
          schema={"type": "object", "properties": {}}),
     dict(name="fu_catalog", title="Operation catalog", effect="read", readonly_ok=True,
-         description="Discover fu_do operations. No args: categories with operation names. With category: full params per operation. Only operations the current policy allows are listed.",
-         schema={"type": "object", "properties": {"category": {"type": "string"}}}),
+         description="Discover fu_do operations. No args: categories with operation names. category: full params per operation. operation: one operation's full reference with its siblings. query: keyword search over names and descriptions (top 10; category narrows it). Only operations the current policy allows are listed.",
+         schema=json_schema(CATALOG.params)),
     dict(name="fu_do", title="Execute operation", effect="destructive", readonly_ok=True,
-         description="Execute one operation from fu_catalog. Args are validated against its declared params before Resolve is contacted (missing, wrong type, unknown key with suggestion, enum), then against the live input TSV in Resolve. Several steps? Use ONE batch.run (one call, one undo event; read/verify children like tool.info or render.frame can ride along; no automatic rollback). Each mutating call is one undo event (comp.undo reverts it). dryRun: validate only. A timeout means uncertain completion: re-read state first. Example: fu_do({operation: 'keyframe.add', args: {tool: 'Title', input: 'Size', keys: [[0, 0.05], [24, 0.1]], ease: 'house'}})",
+         description="Execute one operation from fu_catalog. Args are validated against its declared params before Resolve is contacted (missing, wrong type, unknown key with suggestion, enum), then against the live input TSV in Resolve. Several steps? Use ONE batch.run (one call, one undo event; read/verify children like tool.info or render.frame can ride along; atomic: true undoes it all on any failure). Each mutating call is one undo event (comp.undo reverts it). dryRun: validate only. Typed shortcuts for the most-used operations (same path, schema generated from the params): fu_scene_build, fu_scene_plan, fu_batch, fu_contact_sheet. A timeout means uncertain completion: the reply carries a receipt, and batch.recover re-reads the comp before any retry. Example: fu_do({operation: 'keyframe.add', args: {tool: 'Title', input: 'Size', keys: [[0, 0.05], [24, 0.1]], ease: 'house'}})",
          schema={"type": "object", "required": ["operation"], "properties": {
              "operation": {"type": "string", "description": "Operation name from fu_catalog, e.g. 'tool.add', 'keyframe.add', 'setting.paste'."},
-             "args": {"type": "object", "additionalProperties": True, "description": "Operation arguments (see fu_catalog)."},
-             "timeoutMs": {"type": "integer", "minimum": 1, "description": "Per-call timeout (default 60000). Raise for renders and big batches."},
-             "dryRun": {"type": "boolean", "description": "Validate and policy-check only; nothing reaches Resolve."}}}),
+             "args": {"type": "object", "additionalProperties": True, "description": "Operation arguments (see fu_catalog)."}, **RUN}}),
+    # shortcuts: one fu_do operation each; inputSchema = tool_schema(), visibility = the operation's policy
+    dict(name="fu_scene_build", title="Build scene", effect="destructive", operation="scene.build",
+         description="Shortcut for fu_do scene.build: build a whole scene from one layer-level description (or a scene JSON path) as a native graph in one quiet paste, one undo event. Same validation, policy and dryRun as fu_do; full reference: fu_catalog({operation: 'scene.build'}), description format: fu_do scene.schema."),
+    dict(name="fu_scene_plan", title="Plan scene", effect="read", operation="scene.plan",
+         description="Shortcut for fu_do scene.plan: offline dry run of scene.build that validates a scene description and reports node counts, cost drivers and efficiency decisions without touching Resolve. Full reference: fu_catalog({operation: 'scene.plan'})."),
+    dict(name="fu_batch", title="Batch", effect="destructive", operation="batch.run",
+         description="Shortcut for fu_do batch.run: several operations ({operation or op, args} each, or a JSON file path) in one call and one undo event, each child validated and policy-checked; not transactional unless atomic: true. Full reference: fu_catalog({operation: 'batch.run'}); timeoutMs covers the whole batch."),
+    dict(name="fu_contact_sheet", title="Contact sheet", effect="write", operation="render.contact_sheet",
+         description="Shortcut for fu_do render.contact_sheet: render frames of a tool into one labeled grid PNG returned inline, so one look covers the whole motion (adds a temporary Saver, so it is withheld in read-only mode like fu_render_frame). Full reference: fu_catalog({operation: 'render.contact_sheet'}); raise timeoutMs for many or heavy frames."),
 ]
+SHORTCUTS = {t["name"]: t["operation"] for t in TOOLS if "operation" in t}
+
+
+def tool_schema(t):
+    """A shortcut's inputSchema: its operation's params plus fu_do's timeoutMs/dryRun (an operation param of that name wins)."""
+    if "operation" not in t:
+        return t["schema"]
+    s = json_schema(ops()[t["operation"]].params)
+    s["properties"].update({k: x for k, x in RUN.items() if k not in s["properties"]})
+    return s
 
 
 async def handle(name, args):
@@ -404,6 +551,10 @@ async def handle(name, args):
         return catalog(args)
     if name == "fu_do":
         return await do(args)
+    if name in SHORTCUTS:  # exactly fu_do({operation, args, timeoutMs, dryRun})
+        own = {p.name for p in ops()[SHORTCUTS[name]].params}
+        top = {k: args[k] for k in RUN if k in args and k not in own}
+        return await do({"operation": SHORTCUTS[name], "args": {k: x for k, x in args.items() if k not in top}, **top})
     if name in ("fu_get_skill", "fu_get_skill_asset"):
         from .skills import SkillStore
         try:
@@ -442,17 +593,19 @@ async def handle(name, args):
 
 
 def visible_tools():
-    return [t for t in TOOLS if t["readonly_ok"] or not config.read_only()]
+    """Shortcuts are listed when their operation's policy allows it (as fu_catalog lists it); the rest by readonly_ok."""
+    return [t for t in TOOLS if (config.deny_op(ops()[t["operation"]]) is None if "operation" in t else t["readonly_ok"] or not config.read_only())]
 
 
 INSTRUCTIONS = ("Use Fusion: a fast, validated path into DaVinci Resolve Fusion. It sits beside the official DaVinci Resolve MCP "
                 "(run_script: the full Resolve API) and computer use (node graph, Inspector, dialogs); combine them freely, picking "
                 "whatever takes the fewest calls at the least risk for each step. Read fu_get_skill(name: fusion-motion-design) before "
-                "creating or editing a comp (and fusion-reference references/fusion-realities.md, an index of two parts, before the first "
+                "creating or editing a comp (and fusion-reference references/fusion-realities.md, an index of three parts, before the first "
                 "mutation); load only relevant references (long ones page; section: '<heading>' fetches one section). Discover operations "
                 "with fu_catalog, inspect state with fu_context / fu_comp_info / fu_tool_info, act with fu_do (batch.run for multi-step "
-                "work), and verify with fu_render_frame. Skills and catalog work offline. A batch is one undo event but not "
-                "transactional; on timeout re-read state, never blindly retry.")
+                "work; fu_batch, fu_scene_build, fu_scene_plan and fu_contact_sheet are typed shortcuts), and verify with "
+                "fu_render_frame. Skills and catalog work offline. A batch is one undo event; atomic: true undoes it all on any failure. A "
+                "timeout reply carries a receipt: batch.recover re-reads the comp, batch.rollback undoes; never blindly retry.")
 
 
 def build_server():
@@ -464,12 +617,12 @@ def build_server():
         for t in visible_tools():
             ann = {"read": types.ToolAnnotations(readOnlyHint=True), "write": types.ToolAnnotations(destructiveHint=False),
                    "destructive": types.ToolAnnotations(destructiveHint=True)}[t["effect"]]
-            out.append(types.Tool(name=t["name"], title=t["title"], description=t["description"], inputSchema=t["schema"], annotations=ann))
+            out.append(types.Tool(name=t["name"], title=t["title"], description=t["description"], inputSchema=tool_schema(t), annotations=ann))
         return out
 
     @server.call_tool(validate_input=True)
     async def call_tool(name, arguments):
-        if name not in {t["name"] for t in visible_tools()}:
+        if name not in {t["name"] for t in visible_tools()} and name not in SHORTCUTS:  # a hidden shortcut gets fu_do's policy error
             return err_result("FORBIDDEN" if name in {t["name"] for t in TOOLS} else "UNKNOWN_TOOL",
                               f"tool '{name}' is not available" + (" in read-only mode" if config.read_only() else ""))
         try:

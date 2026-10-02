@@ -21,8 +21,8 @@ Match is the mean grayscale difference (MAE, 0-255) against the After Effects re
 
 What the v2 numbers mean: with the scene builder, an agent builds a 2,911-tool Fusion film in about the time the
 After Effects build took, with about a fifth of the first Fusion build's tool calls. Remaining visual differences were
-mostly missing features (no backdrop blur, shape-size animation was not motion-blurred at the time; both are
-tracked in the scene builder's limits and the second is fixed).
+mostly missing features at the time (no backdrop blur, and shape-size animation was not motion-blurred); the
+scene builder has both now.
 
 ## The explainer film
 
@@ -65,8 +65,10 @@ Measured as Deliver jobs with the cache purged before each job; details in `fusi
 
 ## Tests
 
-- Offline: 172 unit tests (`tests.test_offline`, `tests.test_layout`). With the data tables generated, 166 pass
-  and 6 skip (private benchmark fixture, LuaJIT); on a fresh clone without the tables, 147 pass and 25 skip.
+- Offline: 237 unit tests (`tests.test_offline`, `tests.test_layout`, `tests.test_catalog_tools`,
+  `tests.test_receipts`, `tests.test_diagnostics`), including fault injection against a fake Resolve. With the
+  data tables generated, 231 pass and 6 skip (private benchmark fixture); on a fresh clone without the tables,
+  212 pass and 25 skip. Tests that need the LuaJIT inside Resolve.app also skip when it is missing.
 - Live: the smoke test exercised every operation through the real server (164 pass, 0 fail, 8 untested at the
   time of `PARITY.md`, 172 operations); the cache and layout live checks passed in full. `connector/PARITY.md`
   maps every After Effects connector operation to its Fusion counterpart (110 implemented, 40 a different

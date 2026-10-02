@@ -41,7 +41,7 @@ template: the titles, shapes, cards, cameras and node-graph visuals are Fusion t
 
 ## Highlights
 
-- **179 checked operations in 36 categories** behind 11 MCP tools (`fu_*`): comps, tools, inputs, keyframes,
+- **181 checked operations in 36 categories** behind 15 MCP tools (`fu_*`): comps, tools, inputs, keyframes,
   expressions, masks, text, 3D, templates, timelines, renders and Deliver. Every write is read back.
 - **One-call scene builder.** Describe layers, type styles, layout, enter/exit moves and a camera; get an
   editable native graph (`scene.build`), then change it by description (`scene.update`). Multi-scene films live
@@ -52,6 +52,11 @@ template: the titles, shapes, cards, cameras and node-graph visuals are Fusion t
   (560 tools in 1.3 s) and a draft/final switch that flips a whole film in one control.
 - **Guard rails.** Project allowlist, read-only mode, category allowlist, dry runs and checked connections, with
   clear refusals instead of half-applied edits.
+- **Recovery after a timeout.** The worker journals each operation step by step, so the reply to a timeout or
+  a dead worker carries a receipt: what finished, what was running and what never started. `batch.recover`
+  re-reads the comp, `batch.rollback` undoes the call and verifies the result, `resume` finishes the batch
+  without repeating a step, and `atomic: true` makes a batch all or nothing. Fault-injection tests against a fake
+  Resolve cover these paths, and a live check in a scratch project confirmed them in Resolve Studio 21.1.
 - **Craft skills.** A motion-design procedure and router, a distilled Fusion 21.1 reference and a
   Figma-to-Fusion transfer, written for agents and served by the MCP server itself.
 
@@ -63,14 +68,20 @@ flowchart LR
     S -->|"skills on request"| K["skills/<br/>craft, reference, transfer"]
     S --> W["worker process<br/>(one Resolve caller)"]
     W -->|"Fusion scripting API"| R["DaVinci Resolve Studio 21.1<br/>Fusion page"]
+    W -.->|"one line per step"| J["call journal<br/>(receipts, recovery)"]
     A -.->|"full Resolve API"| O["official DaVinci Resolve MCP"]
     A -.->|"dialogs, UI-only controls"| C["computer use"]
     O -.-> R
     C -.-> R
 ```
 
-The agent loads the `use-fusion` skill first, discovers operations with `fu_catalog`, acts with `fu_do` (a batch
-is one undo step), and verifies with `fu_render_frame`. Details: [architecture](docs/architecture.md).
+The agent loads the `use-fusion` skill first, looks up operations with `fu_catalog` (one operation, a keyword
+search or a category), acts with `fu_do` (a batch is one undo step; `atomic: true` makes it all or nothing), and
+verifies with `fu_render_frame`. The most-used operations also have their own tools, `fu_scene_build`,
+`fu_scene_plan`, `fu_batch` and `fu_contact_sheet`, with schemas generated from the operation definitions, and
+every bad-argument reply lists the operation's parameters, so a retry takes one call. If Resolve stops
+answering, the reply carries a receipt from the call's journal, and the batch can be rolled back or resumed.
+Details: [architecture](docs/architecture.md).
 
 ## Quick start
 
@@ -82,7 +93,7 @@ The free edition of Resolve does not allow external scripting.
 git clone https://github.com/legionsound/open-fusion-mcp.git
 cd open-fusion-mcp/connector
 python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-bin/fusion-connector doctor      # checks Python, Resolve, Studio, skills and data tables
+bin/fusion-connector doctor      # checks Python, the scripting port, Resolve, Studio, skills and data tables
 bin/fusion-connector config      # prints the registration command for your MCP client
 ```
 
@@ -140,8 +151,8 @@ with a fifth of the first Fusion build's tool calls. More numbers and caveats: [
 
 | Guide | |
 |---|---|
-| [Install](docs/install.md) | requirements, registration, permissions, policy switches |
-| [Architecture](docs/architecture.md) | server, worker, operations, skills store, tests |
+| [Install](docs/install.md) | requirements, registration, permissions, policy switches, troubleshooting |
+| [Architecture](docs/architecture.md) | server, worker, receipts and recovery, operations, skills store, tests |
 | [The toolbox](docs/toolbox.md) | when to use this connector, the official Resolve MCP or computer use |
 | [Scene builder](docs/scene-builder.md) | the scene description format, films, updates |
 | [Caching](docs/caching.md) | disk caches for the build loop, staleness and refresh |
@@ -152,7 +163,7 @@ with a fifth of the first Fusion build's tool calls. More numbers and caveats: [
 
 ## Status
 
-Version 0.1. Tested on macOS (Apple Silicon) with DaVinci Resolve Studio 21.1.0.14, Python 3.12 and Claude Code.
+Version 0.2. Tested on macOS (Apple Silicon) with DaVinci Resolve Studio 21.1.0.14, Python 3.12 and Claude Code.
 Windows and Linux are untested; the server is plain Python, but the helper that dismisses Resolve's render
 dialogs uses AppleScript. See [CHANGELOG.md](CHANGELOG.md) for what is new.
 

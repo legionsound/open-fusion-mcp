@@ -53,6 +53,14 @@ and `scripts/sync/patches/skills/` removes the router lines that point at them.
 
 ## Releases
 
-Update `CHANGELOG.md` and the version in `connector/fusion_connector/config.py`, run the sync with tests and the
-audit, then tag the release (`v0.1.0`). The public history starts from a fresh single commit so nothing from the
-private development history is carried over.
+1. On a release branch, update `CHANGELOG.md` and the version in `connector/fusion_connector/config.py`, run the
+   sync with tests and the audit, and commit.
+2. Push the branch to the public repository and open a pull request. CI runs the offline tests on Linux and macOS
+   and the privacy scan; `main` accepts the pull request only when all three pass.
+3. Run the live checks that cover the change in a scratch project (`Testbed`) and note the results in the pull
+   request.
+4. Merge, tag the merge commit (`git tag -a v0.2.0 -m "open-fusion-mcp 0.2.0"`) and publish a GitHub release
+   from the changelog entry.
+
+The public history started from a fresh single commit (0.1.0), so nothing from the private development history
+is carried over. Never push the private development branch to the public remote.

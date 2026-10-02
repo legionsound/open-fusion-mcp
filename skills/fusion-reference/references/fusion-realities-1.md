@@ -1,4 +1,4 @@
-<!-- fusion-realities.md part 1 of 2; index: fusion-realities.md -->
+<!-- fusion-realities.md part 1 of 3; index: fusion-realities.md -->
 # Fusion realities: the facts that cause silent failures
 
 The Fusion counterpart of Higgsfield's `ae-mcp-realities`. Read before the first

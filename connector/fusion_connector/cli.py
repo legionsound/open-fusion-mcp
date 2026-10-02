@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import sys
 
-from . import config
+from . import config, diag
 
 PY = sys.executable
 SERVER = os.path.join(config.PROJECT_DIR, "bin", "use-fusion-mcp")
@@ -15,10 +15,10 @@ def doctor(live=True):
     ok = True
     rows = []
 
-    def row(name, good, detail):
+    def row(name, good, detail):  # good None = WARN (reported, not a failure)
         nonlocal ok
-        ok = ok and good
-        rows.append(("OK  " if good else "FAIL") + f"  {name}: {detail}")
+        ok = ok and good is not False
+        rows.append(("WARN" if good is None else "OK  " if good else "FAIL") + f"  {name}: {detail}")
 
     row("python", sys.version_info >= (3, 9), f"{sys.version.split()[0]} at {PY}")
     try:
@@ -49,6 +49,12 @@ def doctor(live=True):
         row("operation catalog", False, str(e))
     r = subprocess.run(["osascript", "-e", 'tell application "System Events" to count processes'], capture_output=True, text=True)
     row("System Events (render modal auto-dismiss " + ("on" if config.auto_dismiss() else "OFF") + ")", r.returncode == 0 or not config.auto_dismiss(), "ok" if r.returncode == 0 else (r.stderr.strip() or "no Accessibility permission"))
+    if live:  # lsof + ps, no Resolve call: a held port makes the scriptapp call below hang, so it is skipped then
+        v = diag.check()
+        row("scripting port", {"ok": True, "problem": False}.get(v["status"]), v["detail"])
+        if v["status"] == "problem":
+            live = False
+            row("Resolve reachable", False, "not tried: a scripting client would hang (see scripting port)")
     if live:
         sys.path.append(config.MODULES_DIR)
         try:

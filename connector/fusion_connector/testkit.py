@@ -241,10 +241,11 @@ def t_partial(ctx, comp, a):
 @op("test.hang", "Test only: stall like a Resolve call that never returns.",
     [P("seconds", "number", "How long.", default=30), P("tool", "string", "A target name for the receipt."),
      P("once", "boolean", "Stall only the first time for this tool (a transient stall); later runs go straight on."),
-     P("add", "string", "Also add the tool named by tool, before or after the stall.", enum=("before", "after"))], category="test")
+     P("add", "string", "Also add the tool named by tool (or addName), before or after the stall.", enum=("before", "after")),
+     P("addName", "string", "Name for add when the step should name no target tool (like a paste).")], category="test")
 def t_hang(ctx, comp, a):
     reg = _guard(ctx)
-    tool, s = a.get("tool"), float(a.get("seconds", 30))
+    tool, s = a.get("tool") or a.get("addName"), float(a.get("seconds", 30))
     if a.get("add") == "before":
         comp.SetActiveTool(None)
         comp.AddTool(reg, -32768, -32768).SetAttrs({"TOOLS_Name": tool})

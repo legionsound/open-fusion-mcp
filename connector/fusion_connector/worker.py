@@ -284,9 +284,11 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None, 
 
 
 def resume_plan(ctx, comp, children, cid, how):
-    """[issue #14] Which steps of the resumed call to skip. Refuses when the ops differ, when a finished step's args changed, or when
-    a step that may have partly applied (it was running, or failed) left its target tools behind and how is 'check'."""
+    """[issue #14] Which steps of the resumed call to skip. Refuses when the ops differ, when a finished step's args changed, or, with
+    how 'check', when a step that may have partly applied (it was running, or failed) left its target tools behind, or names no
+    tools and the comp holds tools nothing else explains (or there is no snapshot to tell)."""
     from . import journal
+    from .ops import OPS
     from .ops.base import OpError
     lines = journal.read(cid)
     head = lines[0] if lines and lines[0].get("t") == "call" else None
@@ -312,14 +314,22 @@ def resume_plan(ctx, comp, children, cid, how):
         raise OpError("INVALID_ARGS", "steps %s already ran with other arguments: resume needs them unchanged" % moved,
                       details={"changed": moved}, hint="Send the finished steps exactly as before (later steps may change).")
     targets = {r["i"]: r.get("targets") or [] for r in lines if r.get("t") == "start"}
+    earlier = created_names([s.get("changed") for s in rec["completed"]])
     skip = {i: "done in %s" % cid for i in done}
     risky, conflicts = [u["index"] for u in rec["uncertain"]] + [f["index"] for f in rec["failed"]], []
     for i in sorted(risky):
-        there = [t for t in targets.get(i, []) if comp.FindTool(t) is not None]
+        op = OPS.get(children[i].get("operation") or "")
         if how == "skip":
             skip[i] = "may have applied in %s; skipped (uncertain: skip)" % cid
-        elif how == "check" and there:
-            conflicts.append({"index": i, "operation": children[i].get("operation"), "targetsPresent": there})
+        elif how == "check" and targets.get(i):
+            there = [t for t in targets[i] if comp.FindTool(t) is not None]
+            if there:
+                conflicts.append({"index": i, "operation": children[i].get("operation"), "targetsPresent": there})
+        elif how == "check" and op is not None and not op.read:   # names no tools (a paste): judge by the comp itself
+            extra = unexplained(comp, next((r for r in lines if r.get("t") == "snapshot"), {}), earlier)
+            if extra is None or extra:
+                conflicts.append({"index": i, "operation": children[i].get("operation"),
+                                  "unexplained": extra if extra is not None else "no snapshot to compare with"})
     if conflicts:
         raise OpError("CONFLICT", "step%s %s may have partly applied: target tools exist" % (
             "s" if len(conflicts) > 1 else "", ", ".join(str(c["index"]) for c in conflicts)), details={"uncertain": conflicts},
@@ -328,8 +338,20 @@ def resume_plan(ctx, comp, children, cid, how):
         comp.EndUndo(True)
         journal.append(cid, {"t": "undo", "state": "closed", "by": "batch.resume"})
     journal.append(cid, {"t": "resumed", "by": ctx.journal.id if getattr(ctx, "journal", None) is not None else "?"})
-    earlier = created_names([s.get("changed") for s in rec["completed"]])
     return {"callId": cid, "skip": skip, "earlier": earlier, "closedUndoGroup": rec["undoGroup"] == "open"}
+
+
+def unexplained(comp, snap, earlier):
+    """Tools in the comp that neither the snapshot before the call nor its finished steps account for: signs that a step which
+    names no tools (a paste) did apply. None when there is no snapshot to compare with."""
+    tools = comp.GetToolList(False) or {}
+    if "names" in snap:
+        now = {t.GetAttrs()["TOOLS_Name"] for t in tools.values()}
+        return sorted(now - set(snap["names"]) - set(earlier))[:20]
+    if snap.get("tools") is not None:
+        n = len(tools) - snap["tools"] - len(earlier)
+        return ["%d more tool%s than the finished steps explain" % (n, "s" if n > 1 else "")] if n > 0 else []
+    return None
 
 
 def resume_readback(comp, snap, plan, results):

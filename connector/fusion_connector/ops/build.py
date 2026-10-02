@@ -2214,7 +2214,8 @@ def eval_lua(ctx, comp, a):
                            "finished are skipped (their args must be unchanged), the rest run, and the comp is read back so every "
                            "intended tool exists once (Fusion would rename a repeated one Title_1). Keeps the finished steps."),
      P("uncertain", "string", "With resume: what to do with a step that was running (or failed) and may have partly applied. check "
-                              "(default): re-run it only when none of its target tools exist, else refuse; skip; rerun.",
+                              "(default): re-run it only when none of its target tools exist (a step that names no tools, like a "
+                              "paste: only when the comp holds no tools the finished steps do not explain), else refuse; skip; rerun.",
        enum=("check", "skip", "rerun"))],
     read=True, undo=False)
 def batch_run(ctx, comp, a):

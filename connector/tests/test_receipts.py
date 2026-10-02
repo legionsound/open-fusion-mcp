@@ -312,6 +312,26 @@ class Resume(Base):
         self.assertTrue(r["ok"], r)
         self.assertEqual(tools(), ["A", "C", "X"])                        # X was kept, not added again as X_1
 
+    def test_resume_asks_when_a_step_without_targets_left_tools(self):
+        ops = [{"operation": "test.add", "args": {"names": ["A"]}},
+               {"operation": "test.hang", "args": {"seconds": 30, "once": True, "add": "before", "addName": "P"}},   # like a paste
+               {"operation": "test.add", "args": {"names": ["C"]}}]
+        cid = self.stall(ops)
+        e = self.err(call("batch.run", {"ops": ops, "resume": cid}))
+        self.assertEqual(e["code"], "CONFLICT")
+        self.assertEqual(e["details"]["uncertain"][0]["unexplained"], ["1 more tool than the finished steps explain"])
+        self.assertTrue(call("batch.run", {"ops": ops, "resume": cid, "uncertain": "skip"})["ok"])
+        self.assertEqual(tools(), ["A", "C", "P"])                         # P kept once, not pasted again as P_1
+
+    def test_resume_reruns_a_step_without_targets_that_did_not_apply(self):
+        ops = [{"operation": "test.add", "args": {"names": ["A"]}},
+               {"operation": "test.hang", "args": {"seconds": 30, "once": True, "add": "after", "addName": "Q"}},
+               {"operation": "test.add", "args": {"names": ["C"]}}]
+        cid = self.stall(ops)
+        r = call("batch.run", {"ops": ops, "resume": cid})
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(tools(), ["A", "C", "Q"])
+
     def test_resume_needs_a_batch_and_no_atomic(self):
         cid = self.err(call("test.hang", {"seconds": 30, "tool": "Y"}, timeoutMs=2500))["details"]["receipt"]["callId"]
         e = self.err(call("batch.run", {"ops": [{"operation": "test.hang", "args": {"seconds": 1, "tool": "Y"}}], "resume": cid}))

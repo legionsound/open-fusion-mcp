@@ -13,7 +13,7 @@ I, D, N = "implemented", "different model", "n/a"
 # AE op -> (status, fusion op(s) or "", note)
 MAP = {
     # batch / command
-    "batch.run": (I, "batch.run", "one call, one undo event (StartUndo/EndUndo on the batch comp), children validated like top-level calls, no automatic rollback"),
+    "batch.run": (I, "batch.run", "one call, one undo event (StartUndo/EndUndo on the batch comp), children validated like top-level calls; atomic: true undoes it all on a failure, resume finishes a timed-out batch"),
     "command.execute": (I, "command.execute", "Fusion actions (comp:DoAction) instead of AE menu command IDs"),
     "command.find": (I, "command.find", "searches Fusion ActionManager actions"),
     "command.list": (I, "command.list", ""),

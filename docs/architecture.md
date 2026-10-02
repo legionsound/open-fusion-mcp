@@ -105,8 +105,8 @@ them on disk.
   (`uncertain: "check"`) it runs again only when none of its target tools exist, otherwise the call stops with
   `CONFLICT` so the agent can inspect and choose `skip` or `rerun`. The dead worker's undo group is closed first,
   so the resumed part is its own undo event. Afterwards the comp is read back: every tool the batch meant to
-  create exists, and no new tool is a renamed copy of one (a paste names a repeated tool `Title_1` instead of
-  failing, which is what a plain retry of the whole batch would cause). New tools that no step reported creating
+  create exists, and no new tool is a renamed copy of one (Fusion names a repeated tool `Title1`, or `Title_1`
+  in a paste, instead of failing, which is what a plain retry of the whole batch would cause). New tools that no step reported creating
   are listed for a look. A call is resumed once; resume and
   `atomic` do not combine.
 - Rollback undoes only with evidence that the call changed something: a step that finished, or a comp that
@@ -135,6 +135,12 @@ whether `setting.paste`, which runs as a deferred Lua `Execute`, lands inside th
 undo group that recorded no change is an undo event at all (`test.undo_probe`), how Fusion names a tool whose
 name is taken (what a plain retry would do), and whether a resumed batch finishes without duplicates.
 `tests/receipts_live.py` checks them in a scratch project.
+
+All of its stages passed on 2026-10-01 in Resolve Studio 21.1.0.14. A killed worker leaves the undo group open,
+and closing it then undoing once reverts exactly the batch. A deferred paste lands inside the batch's undo group.
+Fusion drops an undo group that recorded no change, which is why rollback needs evidence of a change before it
+undoes. Renaming a tool onto a taken name appends a digit (`RL_Dup1`) instead of failing, and a resumed batch
+finished with no duplicates.
 
 ## Scripting-port check (`fusion_connector/diag.py`)
 

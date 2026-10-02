@@ -7,7 +7,8 @@ All notable changes to this project are listed here. The format follows
 ## [0.2.0] - 2026-10-01
 
 Reliability release. Issues #1 to #5, #13 and #14 came from feedback on the r/mcp launch thread; #6 to #11 were
-found while building a 9:16 version of the explainer film.
+found while building a 9:16 version of the explainer film. The recovery paths were checked live in Resolve Studio
+21.1.0.14 before release (`tests/receipts_live.py`, every stage passed).
 
 ### Added
 
@@ -32,7 +33,8 @@ found while building a 9:16 version of the explainer film.
   again; the steps that finished are skipped (their arguments must match the journal's fingerprints), a step that
   may have partly applied runs again only when none of its target tools exist (`uncertain: "check" | "skip" |
   "rerun"`), the dead worker's undo group is closed, and the comp is read back: every intended tool exists and
-  none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title_1).
+  none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title1, or
+  Title_1 in a paste).
 - Fault-injection tests (#3). `fusion_connector/testkit.py` is a file-backed fake Resolve whose state survives a
   killed worker, with test-only operations that hang, crash the worker or fail after a partial change; it is
   inert unless the test environment variables are set. `tests/test_receipts.py` drives the real server and

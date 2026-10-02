@@ -102,8 +102,10 @@ them on disk.
 - `batch.run {ops, resume: callId}` finishes an unfinished batch instead. The caller sends the same ops: the
   connector checks the operation names and the argument hashes of the finished steps against the journal, skips
   those steps, and runs the rest. A step that was running, or failed, may have partly applied: by default
-  (`uncertain: "check"`) it runs again only when none of its target tools exist, otherwise the call stops with
-  `CONFLICT` so the agent can inspect and choose `skip` or `rerun`. The dead worker's undo group is closed first,
+  (`uncertain: "check"`) it runs again only when none of its target tools exist. A step that names no tools (a
+  paste) runs again only when the comp holds no tools that the snapshot and the finished steps do not explain,
+  and never without a snapshot. Otherwise the call stops with `CONFLICT` so the agent can inspect and choose
+  `skip` or `rerun`. The dead worker's undo group is closed first,
   so the resumed part is its own undo event. Afterwards the comp is read back: every tool the batch meant to
   create exists, and no new tool is a renamed copy of one (Fusion names a repeated tool `Title1`, or `Title_1`
   in a paste, instead of failing, which is what a plain retry of the whole batch would cause). New tools that no step reported creating
@@ -190,7 +192,7 @@ Resolve, except for the live check in the project named `Testbed` with `FUSION_M
 ## Tests
 
 - `tests/test_offline.py`, `tests/test_layout.py`, `tests/test_catalog_tools.py`, `tests/test_receipts.py`,
-  `tests/test_diagnostics.py`: 235 offline unit tests (no Resolve). `test_receipts.py` drives the real server
+  `tests/test_diagnostics.py`: 237 offline unit tests (no Resolve). `test_receipts.py` drives the real server
   and a spawned worker through the fake Resolve's faults: receipts on `TIMEOUT` and `TRANSPORT`, recover,
   rollback with and without `keep`, the refusals after later changes and after a first rollback, atomic
   batches, the evidence rule with empty undo groups kept or dropped, resume (a plain retry duplicates the

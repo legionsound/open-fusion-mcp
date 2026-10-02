@@ -31,9 +31,10 @@ found while building a 9:16 version of the explainer film. The recovery paths we
   batch starts. The undo follows the same evidence rule as `batch.rollback`.
 - Resume (#14): `batch.run` takes `resume: <callId>` to finish a batch whose reply was lost. The same ops are sent
   again; the steps that finished are skipped (their arguments must match the journal's fingerprints), a step that
-  may have partly applied runs again only when none of its target tools exist (`uncertain: "check" | "skip" |
-  "rerun"`), the dead worker's undo group is closed, and the comp is read back: every intended tool exists and
-  none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title1, or
+  may have partly applied runs again only when none of its target tools exist, or, for a step that names no
+  tools (a paste), only when the comp holds no tools the finished steps do not explain (`uncertain: "check" |
+  "skip" | "rerun"`). The dead worker's undo group is closed, and the comp is read back: every intended tool
+  exists and none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title1, or
   Title_1 in a paste).
 - Fault-injection tests (#3). `fusion_connector/testkit.py` is a file-backed fake Resolve whose state survives a
   killed worker, with test-only operations that hang, crash the worker or fail after a partial change; it is
@@ -64,7 +65,7 @@ found while building a 9:16 version of the explainer film. The recovery paths we
 - The Fusion realities reference gained the render-night findings: check renders do not predict Deliver time,
   how Resolve's render cache and "Use render cached images" behave, and how to keep the clean part of a stopped
   Deliver.
-- 181 operations in 36 categories. The offline suite has 235 tests, and CI runs all five test modules.
+- 181 operations in 36 categories. The offline suite has 237 tests, and CI runs all five test modules.
 
 ### Fixed
 

@@ -9,7 +9,7 @@ body:
     id: what
     attributes:
       label: What happened
-      description: The operation or tool, the arguments you (or the agent) sent, and the reply or error.
+      description: The operation or tool, the arguments you (or the agent) sent, and the reply or error. If a call timed out, include its receipt (`details.receipt`) or the `batch.recover` result.
       render: text
     validations:
       required: true
@@ -28,7 +28,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Output of `fu_version_info` (Resolve build, Studio, connector version, Python).
+      description: Output of `fu_version_info` (Resolve build, Studio, connector version, Python). If every call hangs, also `fusion-connector doctor`.
     validations:
       required: true
   - type: input

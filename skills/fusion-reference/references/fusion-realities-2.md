@@ -217,8 +217,10 @@ local Fusion connector).
 - A multi-step script is not a transaction. When step 7 fails, steps 1-6 already changed the comp.
   Inspect partial results (`FindTool` for each planned name, `GetConnectedOutput`, `GetKeyFrames`)
   before any retry, and repair only what is confirmed missing. `comp.StartUndo(name)` /
-  `comp.EndUndo(True)` groups a batch into one undo step (in the stub; bridge behavior
-  unverified); never nest undo calls inside the batch they are meant to undo.
+  `comp.EndUndo(True)` groups a batch into one undo step (verified live 2026-10-01; a killed client
+  leaves the group open and a group that recorded nothing is dropped: index, newest findings 5-6);
+  never nest undo calls inside the batch they are meant to undo. With the connector, a batch's
+  receipt, `batch.recover` and `resume` do this inspection and the safe retry for you.
 - A timeout after the call was accepted means completion is unknown, not failed. A "retryable"
   transport error does not make a mutation safe to replay. Inspect state, then decide.
 - Distinguish an error raised by your script (a Lua/Python exception, a `False` from

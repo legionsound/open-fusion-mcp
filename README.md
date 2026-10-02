@@ -56,7 +56,7 @@ template: the titles, shapes, cards, cameras and node-graph visuals are Fusion t
   a dead worker carries a receipt: what finished, what was running and what never started. `batch.recover`
   re-reads the comp, `batch.rollback` undoes the call and verifies the result, `resume` finishes the batch
   without repeating a step, and `atomic: true` makes a batch all or nothing. Fault-injection tests against a fake
-  Resolve cover these paths.
+  Resolve cover these paths, and a live check in a scratch project confirmed them in Resolve Studio 21.1.
 - **Craft skills.** A motion-design procedure and router, a distilled Fusion 21.1 reference and a
   Figma-to-Fusion transfer, written for agents and served by the MCP server itself.
 
@@ -68,6 +68,7 @@ flowchart LR
     S -->|"skills on request"| K["skills/<br/>craft, reference, transfer"]
     S --> W["worker process<br/>(one Resolve caller)"]
     W -->|"Fusion scripting API"| R["DaVinci Resolve Studio 21.1<br/>Fusion page"]
+    W -.->|"one line per step"| J["call journal<br/>(receipts, recovery)"]
     A -.->|"full Resolve API"| O["official DaVinci Resolve MCP"]
     A -.->|"dialogs, UI-only controls"| C["computer use"]
     O -.-> R
@@ -75,10 +76,12 @@ flowchart LR
 ```
 
 The agent loads the `use-fusion` skill first, looks up operations with `fu_catalog` (one operation, a keyword
-search or a category), acts with `fu_do` (a batch is one undo step), and verifies with `fu_render_frame`. The
-most-used operations also have their own tools, `fu_scene_build`, `fu_scene_plan`, `fu_batch` and
-`fu_contact_sheet`, with schemas generated from the operation definitions. Details:
-[architecture](docs/architecture.md).
+search or a category), acts with `fu_do` (a batch is one undo step; `atomic: true` makes it all or nothing), and
+verifies with `fu_render_frame`. The most-used operations also have their own tools, `fu_scene_build`,
+`fu_scene_plan`, `fu_batch` and `fu_contact_sheet`, with schemas generated from the operation definitions, and
+every bad-argument reply lists the operation's parameters, so a retry takes one call. If Resolve stops
+answering, the reply carries a receipt from the call's journal, and the batch can be rolled back or resumed.
+Details: [architecture](docs/architecture.md).
 
 ## Quick start
 
@@ -90,7 +93,7 @@ The free edition of Resolve does not allow external scripting.
 git clone https://github.com/legionsound/open-fusion-mcp.git
 cd open-fusion-mcp/connector
 python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-bin/fusion-connector doctor      # checks Python, Resolve, Studio, skills and data tables
+bin/fusion-connector doctor      # checks Python, the scripting port, Resolve, Studio, skills and data tables
 bin/fusion-connector config      # prints the registration command for your MCP client
 ```
 

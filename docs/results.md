@@ -65,10 +65,10 @@ Measured as Deliver jobs with the cache purged before each job; details in `fusi
 
 ## Tests
 
-- Offline: 235 unit tests (`tests.test_offline`, `tests.test_layout`, `tests.test_catalog_tools`,
+- Offline: 237 unit tests (`tests.test_offline`, `tests.test_layout`, `tests.test_catalog_tools`,
   `tests.test_receipts`, `tests.test_diagnostics`), including fault injection against a fake Resolve. With the
-  data tables generated, 229 pass and 6 skip (private benchmark fixture); on a fresh clone without the tables,
-  210 pass and 25 skip. Tests that need the LuaJIT inside Resolve.app also skip when it is missing.
+  data tables generated, 231 pass and 6 skip (private benchmark fixture); on a fresh clone without the tables,
+  212 pass and 25 skip. Tests that need the LuaJIT inside Resolve.app also skip when it is missing.
 - Live: the smoke test exercised every operation through the real server (164 pass, 0 fail, 8 untested at the
   time of `PARITY.md`, 172 operations); the cache and layout live checks passed in full. `connector/PARITY.md`
   maps every After Effects connector operation to its Fusion counterpart (110 implemented, 40 a different

@@ -22,9 +22,9 @@ found while building a 9:16 version of the explainer film. The recovery paths we
   whether the uncertain step's target tools exist, and ends with plain advice.
 - `batch.rollback` (#1): closes an open undo group, undoes the call and verifies the comp against the
   snapshot. `keep: true` only closes the group. It undoes only when a step finished or the comp differs from
-  the snapshot (an undo group that recorded no change may not be an undo event, so an undo could revert an
-  earlier change), refuses when later changes ran on the same comp, and refuses a second rollback of the same
-  call; `force: true` overrides. With nothing to compare against, it reports `verified: null`.
+  the snapshot (Fusion drops an undo group that recorded no change, as the live check confirmed, so an undo
+  could revert an earlier change), refuses when later changes ran on the same comp, and refuses a second rollback
+  of the same call; `force: true` overrides. With nothing to compare against, it reports `verified: null`.
 - Atomic batches (#2): `batch.run` takes `atomic: true` (stop at the first failure, undo the whole batch, verify
   the comp against a names snapshot) and `snapshot: "count" | "names"`. Steps that one comp undo cannot revert,
   such as timeline, project and Deliver operations, and steps that failed validation are refused before the
@@ -34,8 +34,8 @@ found while building a 9:16 version of the explainer film. The recovery paths we
   may have partly applied runs again only when none of its target tools exist, or, for a step that names no
   tools (a paste), only when the comp holds no tools the finished steps do not explain (`uncertain: "check" |
   "skip" | "rerun"`). The dead worker's undo group is closed, and the comp is read back: every intended tool
-  exists and none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools (Title1, or
-  Title_1 in a paste).
+  exists and none was duplicated. A plain retry of the whole batch would make Fusion rename the repeated tools
+  (Title1, or Title_1 in a paste).
 - Fault-injection tests (#3). `fusion_connector/testkit.py` is a file-backed fake Resolve whose state survives a
   killed worker, with test-only operations that hang, crash the worker or fail after a partial change; it is
   inert unless the test environment variables are set. `tests/test_receipts.py` drives the real server and

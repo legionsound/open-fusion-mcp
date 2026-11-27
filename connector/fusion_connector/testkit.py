@@ -74,6 +74,7 @@ class FakeTool:
         if rec.get("ucKeepOnWrite") and not set(old) <= set(uc):   # a control the app refuses to drop
             uc = dict(rec["uc"], **uc)
         rec["uc"] = [[k, v] for k, v in uc.items()]
+        rec.pop("orphans", None)   # live: Refresh after a write drops inputs the table no longer holds
         _save(self.comp.path, st)
 
     def Refresh(self):
@@ -81,10 +82,13 @@ class FakeTool:
 
     def GetInputList(self):
         rec = _load(self.comp.path)["tools"].get(self.Name) or {}
-        return {i + 1: _FakeInput(k) for i, (k, _) in enumerate(rec.get("uc", []))}
+        ids = [k for k, _ in rec.get("uc", [])] + list(rec.get("orphans", {}))   # orphans: on the tool, not in the table
+        return {i + 1: _FakeInput(k) for i, k in enumerate(ids)}
 
     def GetInput(self, iid, t=None):
         rec = _load(self.comp.path)["tools"].get(self.Name) or {}
+        if iid in rec.get("orphans", {}):
+            return rec["orphans"][iid]
         spec = dict(rec.get("uc", [])).get(iid)
         return None if spec is None else spec.get("INP_Default", 0.0)
 
@@ -269,6 +273,18 @@ def t_add(ctx, comp, a):
         comp.SetActiveTool(None)   # AddTool would auto-wire to the active tool (realities)
         comp.AddTool(reg, -32768, -32768).SetAttrs({"TOOLS_Name": n})
     return {"added": list(a["names"])}
+
+
+@op("test.drop_inputs", "Test only: remove inputs from a fake tool outside the undo groups (like a UserControls write).",
+    [P("tool", "string", "Tool name.", required=True), P("ids", "array", "Input IDs.", required=True)], category="test")
+def t_drop_inputs(ctx, comp, a):
+    _guard(ctx)
+    st = _load(comp.path)
+    rec = st["tools"][a["tool"]]
+    rec["uc"] = [[k, v] for k, v in rec.get("uc", []) if k not in a["ids"]]
+    rec["orphans"] = {k: v for k, v in rec.get("orphans", {}).items() if k not in a["ids"]}
+    _save(comp.path, st)
+    return {"dropped": list(a["ids"])}
 
 
 @op("test.partial", "Test only: add the first failAfter names, then fail.",

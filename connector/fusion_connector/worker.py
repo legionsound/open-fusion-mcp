@@ -406,9 +406,9 @@ def touched_inputs(ctx, comp, children):
 
 def settle_inputs(ctx, comp, before, results, rb):
     """Undo does not revert UserControls [live 2026-11-27]: remove the controls the batch's input.add_control steps added, then
-    compare the touched tools' input lists with the baseline; anything left makes the rollback unverified."""
+    compare the touched tools' input lists with the baseline; an input left over or missing makes the rollback unverified."""
     from .ops.base import read_user_controls
-    removed, left = {}, {}
+    removed, left, missing = {}, {}, {}
     for r in results:
         res = r.get("result") if r.get("ok") and r.get("operation") == "input.add_control" else None
         t = comp.FindTool(res["tool"]) if isinstance(res, dict) else None
@@ -420,14 +420,17 @@ def settle_inputs(ctx, comp, before, results, rb):
             removed.setdefault(res["tool"], []).append(res["input"])
     for n, ids in before.items():
         t = comp.FindTool(n)
-        extra = sorted(set(ctx.inputs(t)) - set(ids)) if t is not None else []
-        if extra:
-            left[n] = extra
+        now = set(ctx.inputs(t)) if t is not None else set()
+        if t is not None and now - set(ids):
+            left[n] = sorted(now - set(ids))
+        if t is not None and set(ids) - now:
+            missing[n] = sorted(set(ids) - now)
     if removed:
         rb["evidence"]["removedControls"] = removed
-    if left:
-        rb["evidence"]["inputsLeft"] = left
-        rb["verified"] = False
+    for k, v in (("inputsLeft", left), ("inputsMissing", missing)):
+        if v:
+            rb["evidence"][k] = v
+            rb["verified"] = False
     return rb
 
 

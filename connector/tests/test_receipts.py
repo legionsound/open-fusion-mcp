@@ -187,6 +187,25 @@ class UserControlsCase(Base):
         self.assertEqual(controls(), ["CtlA", "CtlB"])
         self.assertEqual(tools(), ["CTRL"])
 
+    def test_add_control_refuses_when_orphan_inputs_would_be_lost(self):
+        # live 2026-11-27: an earlier table write left OrphanA etc. on the tool but out of the UserControls table
+        pasted_ctrl(orphans={"OrphanA": 0.35, "OrphanB": 0.535})
+        e = self.err(call("input.add_control", self.ADD_C["args"]))
+        self.assertEqual(e["code"], "OPERATION_FAILED")
+        self.assertIn("OrphanA", e["message"])
+        st = fake_state()["tools"]["CTRL"]
+        self.assertEqual(controls(), ["CtlA", "CtlB"])               # nothing written
+        self.assertEqual(st["orphans"], {"OrphanA": 0.35, "OrphanB": 0.535})
+
+    def test_atomic_rollback_reports_missing_inputs(self):
+        pasted_ctrl()
+        e = self.err(call("batch.run", {"atomic": True, "ops": [{"operation": "test.drop_inputs", "args": {"tool": "CTRL", "ids": ["CtlA"]}},
+                                                                {"operation": "test.partial", "args": {"names": ["X"], "failAfter": 1}}]}))
+        rb = e["details"]["rollback"]
+        self.assertIs(rb["verified"], False, rb)
+        self.assertEqual(rb["evidence"]["inputsMissing"], {"CTRL": ["CtlA"]})
+        self.assertIn("NOT verified", e["message"])
+
     def test_atomic_rollback_reports_leftover_inputs(self):
         pasted_ctrl(ucKeepOnWrite=True)                                # the control cannot be removed
         e = self.err(call("batch.run", {"atomic": True, "ops": [self.ADD_C, {"operation": "test.partial", "args": {"names": ["X"], "failAfter": 1}}]}))

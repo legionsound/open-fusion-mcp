@@ -1330,18 +1330,31 @@ def input_add_control(ctx, comp, a):
     if uc is None:   # writing now would replace every existing control with this one
         raise OpError("OPERATION_FAILED", f"cannot read {a['tool']}'s existing UserControls through the bridge; nothing was written",
                       hint="Add the control with a .setting paste of the tool's UserControls instead.")
-    keep = [k for k in uc if k in ctx.inputs(t)]
+    before = list(ctx.inputs(t))
+    tsv = ctx.tsv()
+    reg = t.GetAttrs()["TOOLS_RegID"]
+    # [live 2026-11-27] inputs on the tool but in neither the table nor the TSV (left by an earlier table write and an undo)
+    # vanish on the next write + Refresh: refuse before writing
+    orphans = [k for k in before if k not in uc and not tsv.known_input(reg, k)] if reg in tsv.tools else []
+    if orphans:
+        raise OpError("OPERATION_FAILED", f"{a['tool']} has inputs outside its UserControls table {orphans[:20]}: writing the table "
+                      "would remove them; nothing was written",
+                      hint="Paste a new controller tool whose .setting defines every control instead of adding to this one.")
+    old = type(uc)(uc)
     uc[a["id"]] = spec
     t.UserControls = uc
     t.Refresh()
     t = comp.FindTool(a["tool"])
     now = ctx.inputs(t)
+    lost = [k for k in before if k not in now]
+    if lost:   # put the previous table back (inputs it never held cannot come back this way) and say so
+        t.UserControls = old
+        t.Refresh()
+        raise OpError("OPERATION_FAILED", f"adding '{a['id']}' removed existing inputs {lost[:20]} from {a['tool']}; the previous "
+                      "UserControls table was written back", details={"lost": lost},
+                      hint="Inputs outside the table stay lost (UserControls changes sit outside undo); re-paste the tool's controls.")
     if a["id"] not in now:
         raise OpError("OPERATION_FAILED", "user control did not appear after Refresh")
-    lost = [k for k in keep if k not in now]
-    if lost:
-        raise OpError("OPERATION_FAILED", f"adding '{a['id']}' removed existing user controls {lost} from {a['tool']}",
-                      hint="comp.undo may not bring them back (UserControls changes sit outside undo); re-paste the tool's controls.")
     return {"tool": a["tool"], "input": a["id"], "value": jv(t.GetInput(a["id"], comp.CurrentTime))}
 
 

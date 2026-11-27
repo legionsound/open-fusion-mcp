@@ -27,6 +27,19 @@ def iid_of(i):
     return a.get("INPS_ID") or a.get("INPS_Name") or "?"
 
 
+def read_user_controls(tool):
+    """A tool's UserControls as an OrderedDict, or None when the bridge cannot read them.
+    [live 2026-11-27, scratch timeline] Pasted (ordered()) controls come through the external bridge as an OrderedDict that it builds
+    by name: without builtins.OrderedDict the read raises NameError inside the bridge and returns None, and writing a fresh
+    table over that wiped every pasted control. A fresh tool reads {} (live 2026-09-26)."""
+    import builtins
+    import collections
+    if not hasattr(builtins, "OrderedDict"):
+        builtins.OrderedDict = collections.OrderedDict
+    uc = tool.UserControls
+    return collections.OrderedDict(uc) if isinstance(uc, dict) else None
+
+
 def oid_of(o):
     a = o.GetAttrs() or {}
     return a.get("OUTS_ID") or a.get("OUTS_Name") or "?"

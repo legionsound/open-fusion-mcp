@@ -209,6 +209,7 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None, 
         from .journal import take_snapshot
         snap = take_snapshot(comp, names=True)
     snap = snap or {}
+    inputs_before = touched_inputs(ctx, comp, children) if atomic else {}
     results, failed, stopped, inline = [], 0, False, []
     comp.StartUndo("use-fusion batch.run")
     jot(ctx, "undo", "open")
@@ -262,7 +263,7 @@ def run_batch(ctx, comp, children, stop, atomic=False, snapshot=None, ref=None, 
         same, ev, _ = diff_against(comp, snap)
         if mutated or not same:
             comp.Undo(1)
-            rb = verify_against(comp, snap, created)
+            rb = settle_inputs(ctx, comp, inputs_before, results, verify_against(comp, snap, created))
             msg = "atomic batch: step %d failed, so the whole batch was undone (%s)" % (
                 bad_ix, "verified" if rb["verified"] else "NOT verified: check the comp")
             hint = ("Fix the failing step and run the batch again." if rb["verified"] else
@@ -389,6 +390,45 @@ def created_names(results):
             elif isinstance(v, (list, tuple)):
                 out += [x for x in v if isinstance(x, str)]
     return list(dict.fromkeys(out))
+
+
+def touched_inputs(ctx, comp, children):
+    """Input IDs of the existing tools an atomic batch's steps name, read before the first step (the rollback's input baseline)."""
+    from .journal import targets_of
+    out = {}
+    for ch in children:
+        for n in targets_of(ch.get("args") or {}):
+            t = comp.FindTool(n) if n not in out else None
+            if t is not None:
+                out[n] = sorted(ctx.inputs(t))
+    return out
+
+
+def settle_inputs(ctx, comp, before, results, rb):
+    """Undo does not revert UserControls [live 2026-11-27]: remove the controls the batch's input.add_control steps added, then
+    compare the touched tools' input lists with the baseline; anything left makes the rollback unverified."""
+    from .ops.base import read_user_controls
+    removed, left = {}, {}
+    for r in results:
+        res = r.get("result") if r.get("ok") and r.get("operation") == "input.add_control" else None
+        t = comp.FindTool(res["tool"]) if isinstance(res, dict) else None
+        uc = read_user_controls(t) if t is not None and res["input"] in ctx.inputs(t) else None
+        if uc is not None and res["input"] in uc:
+            del uc[res["input"]]
+            t.UserControls = uc
+            t.Refresh()
+            removed.setdefault(res["tool"], []).append(res["input"])
+    for n, ids in before.items():
+        t = comp.FindTool(n)
+        extra = sorted(set(ctx.inputs(t)) - set(ids)) if t is not None else []
+        if extra:
+            left[n] = extra
+    if removed:
+        rb["evidence"]["removedControls"] = removed
+    if left:
+        rb["evidence"]["inputsLeft"] = left
+        rb["verified"] = False
+    return rb
 
 
 def diff_against(comp, snap):

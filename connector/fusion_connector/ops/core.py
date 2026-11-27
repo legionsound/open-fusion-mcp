@@ -7,7 +7,7 @@ import time
 
 from .. import config
 from ..schema import P
-from .base import (iid_of, oid_of, COMP, FRAME, INPUT, TOOL, OpError, color, jv, kit, num, op)
+from .base import (iid_of, oid_of, COMP, FRAME, INPUT, TOOL, OpError, color, jv, kit, num, op, read_user_controls)
 
 # ================================================================ project / page / timeline
 
@@ -1326,14 +1326,22 @@ def input_add_control(ctx, comp, a):
                     INP_DefaultX=(a.get("default") or [0.5, 0.5])[0], INP_DefaultY=(a.get("default") or [0.5, 0.5])[1])
     else:
         spec.update(LINKID_DataType="Text", INPID_InputControl="TextEditControl", TEC_Lines=1)
-    uc = t.UserControls or {}
-    uc = dict(uc) if isinstance(uc, dict) else {}
+    uc = read_user_controls(t)
+    if uc is None:   # writing now would replace every existing control with this one
+        raise OpError("OPERATION_FAILED", f"cannot read {a['tool']}'s existing UserControls through the bridge; nothing was written",
+                      hint="Add the control with a .setting paste of the tool's UserControls instead.")
+    keep = [k for k in uc if k in ctx.inputs(t)]
     uc[a["id"]] = spec
     t.UserControls = uc
     t.Refresh()
     t = comp.FindTool(a["tool"])
-    if a["id"] not in ctx.inputs(t):
+    now = ctx.inputs(t)
+    if a["id"] not in now:
         raise OpError("OPERATION_FAILED", "user control did not appear after Refresh")
+    lost = [k for k in keep if k not in now]
+    if lost:
+        raise OpError("OPERATION_FAILED", f"adding '{a['id']}' removed existing user controls {lost} from {a['tool']}",
+                      hint="comp.undo may not bring them back (UserControls changes sit outside undo); re-paste the tool's controls.")
     return {"tool": a["tool"], "input": a["id"], "value": jv(t.GetInput(a["id"], comp.CurrentTime))}
 
 

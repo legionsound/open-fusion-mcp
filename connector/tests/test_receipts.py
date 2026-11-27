@@ -148,6 +148,54 @@ class Batches(Base):
         self.assertEqual(tools(), [])                                  # refused before the first step
 
 
+def pasted_ctrl(**flags):
+    """A Custom tool CTRL holding two user controls from a .setting paste (ordered() table, read back as an OrderedDict)."""
+    from fusion_connector.testkit import _save
+    st = fake_state()
+    spec = {"__flags": 1048832, "LINKS_Name": "A", "LINKID_DataType": "Number", "INPID_InputControl": "SliderControl"}
+    st["tools"]["CTRL"] = dict({"reg": "Custom", "ordered": True,
+                                "uc": [["CtlA", dict(spec, INP_Default=0.25)], ["CtlB", dict(spec, INP_Default=0.75)]]}, **flags)
+    _save(STATE, st)
+
+
+def controls():
+    return [k for k, _ in fake_state()["tools"]["CTRL"]["uc"]]
+
+
+class UserControlsCase(Base):
+    ADD_C = {"operation": "input.add_control", "args": {"tool": "CTRL", "id": "CtlC", "default": 0.5}}
+
+    def test_add_control_keeps_pasted_controls(self):
+        pasted_ctrl()
+        r = call("input.add_control", self.ADD_C["args"])
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(controls(), ["CtlA", "CtlB", "CtlC"])      # live bug: CtlA/CtlB were wiped
+
+    def test_add_control_refuses_when_controls_cannot_be_read(self):
+        pasted_ctrl(ucUnreadable=True)
+        e = self.err(call("input.add_control", self.ADD_C["args"]))
+        self.assertEqual(e["code"], "OPERATION_FAILED")
+        self.assertIn("UserControls", e["message"])
+        self.assertEqual(controls(), ["CtlA", "CtlB"])               # nothing written
+
+    def test_atomic_rollback_removes_added_controls(self):
+        pasted_ctrl()
+        e = self.err(call("batch.run", {"atomic": True, "ops": [self.ADD_C, {"operation": "test.partial", "args": {"names": ["X"], "failAfter": 1}}]}))
+        rb = e["details"]["rollback"]
+        self.assertTrue(rb["verified"], rb)
+        self.assertEqual(rb["evidence"]["removedControls"], {"CTRL": ["CtlC"]})
+        self.assertEqual(controls(), ["CtlA", "CtlB"])
+        self.assertEqual(tools(), ["CTRL"])
+
+    def test_atomic_rollback_reports_leftover_inputs(self):
+        pasted_ctrl(ucKeepOnWrite=True)                                # the control cannot be removed
+        e = self.err(call("batch.run", {"atomic": True, "ops": [self.ADD_C, {"operation": "test.partial", "args": {"names": ["X"], "failAfter": 1}}]}))
+        rb = e["details"]["rollback"]
+        self.assertIs(rb["verified"], False, rb)
+        self.assertEqual(rb["evidence"]["inputsLeft"], {"CTRL": ["CtlC"]})
+        self.assertIn("NOT verified", e["message"])
+
+
 class Timeouts(Base):
     BATCH = [{"operation": "test.add", "args": {"names": ["A"]}}, {"operation": "test.add", "args": {"names": ["B"]}},
              {"operation": "test.hang", "args": {"seconds": 30, "tool": "X"}},

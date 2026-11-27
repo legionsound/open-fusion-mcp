@@ -53,6 +53,49 @@ class FakeTool:
         self.comp._act(["delete", self.Name, (_load(self.comp.path)["tools"].get(self.Name) or {}).get("reg", "Fake")])
         return True
 
+    # -- user controls, stored as st["tools"][name]["uc"] = [[id, spec], ...]. Like the live bridge [2026-11-27, scratch timeline]:
+    # pasted (ordered()) controls come back as an OrderedDict, which the external bridge builds by name, so without
+    # builtins.OrderedDict the read fails and returns None. Writes are outside the undo groups (live: Undo kept an added control).
+    @property
+    def UserControls(self):
+        import builtins
+        import collections
+        rec = _load(self.comp.path)["tools"].get(self.Name) or {}
+        if rec.get("ucUnreadable") or (rec.get("ordered") and not hasattr(builtins, "OrderedDict")):
+            return None
+        uc = collections.OrderedDict((k, dict(v)) for k, v in rec.get("uc", []))
+        return uc if rec.get("ordered") else dict(uc)
+
+    @UserControls.setter
+    def UserControls(self, uc):
+        st = _load(self.comp.path)
+        rec = st["tools"][self.Name]
+        old = [k for k, _ in rec.get("uc", [])]
+        if rec.get("ucKeepOnWrite") and not set(old) <= set(uc):   # a control the app refuses to drop
+            uc = dict(rec["uc"], **uc)
+        rec["uc"] = [[k, v] for k, v in uc.items()]
+        _save(self.comp.path, st)
+
+    def Refresh(self):
+        return self
+
+    def GetInputList(self):
+        rec = _load(self.comp.path)["tools"].get(self.Name) or {}
+        return {i + 1: _FakeInput(k) for i, (k, _) in enumerate(rec.get("uc", []))}
+
+    def GetInput(self, iid, t=None):
+        rec = _load(self.comp.path)["tools"].get(self.Name) or {}
+        spec = dict(rec.get("uc", [])).get(iid)
+        return None if spec is None else spec.get("INP_Default", 0.0)
+
+
+class _FakeInput:
+    def __init__(self, iid):
+        self.iid = iid
+
+    def GetAttrs(self):
+        return {"INPS_ID": self.iid, "INPS_Name": self.iid, "INPS_DataType": "Number"}
+
 
 class FakeComp:
     """Tools are names + regIds. Undo groups behave like Fusion's: actions inside StartUndo/EndUndo form one undo event, actions

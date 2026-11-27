@@ -2630,6 +2630,19 @@ class SB3PasteCost(unittest.TestCase):
         finally:
             L.close()
 
+    def test_chunk_not_armed_by_python_writes_nothing(self):
+        # Execute ran in a comp Ctx.lua never armed ('pending' was set on the target, not here): the guard returns before the
+        # paste and before any SetData, so that comp is left exactly as it was [live 2026-11-27, scratch timeline].
+        from fusion_connector.ops.base import PASTE_LUA, lua_list, lua_wrap
+        L = luajit.Lua()
+        try:
+            L.fill(3, prefix="D")
+            L.run(lua_wrap(PASTE_LUA % (lua_list(self.names), self.path), "k"))
+            self.assertEqual(ln(L, "comp:FindTool('P0') ~= nil"), "false")
+            self.assertEqual(ln(L, "comp:GetData('k')"), "nil")
+        finally:
+            L.close()
+
     def scene_in(self, L, d):
         c = comp(d)
         spec, text = sops.build_spec(c, None, False, False)
@@ -3302,6 +3315,97 @@ class DeliverStartHint(unittest.TestCase):
         self.assertIn("same script call that loaded the project", e.hint)
         self.assertEqual(e.details, {"jobIds": ["j1", "j2"], "found": ["j1"]})
         self.assertNotIn("Not in the render queue", start_failed(["j1"], [{"JobId": "j1"}]).hint)
+
+
+class _ShownResolve:
+    """Live 2026-11-27 (Testbed: a paste aimed at one timeline's comp landed in another comp). On the Edit page GetCurrentComp names the
+    current timeline's item comp; the Fusion page, once opened, still shows the comp it showed before, and Execute runs there."""
+
+    def __init__(self, target, other):
+        self.target, self.other, self.page, self.shown = target, other, "edit", other
+        target.res = other.res = self
+
+    def GetVersionString(self):
+        return "21.2"
+
+    def GetCurrentPage(self):
+        return self.page
+
+    def OpenPage(self, p):
+        self.page = p
+        return True
+
+    def Fusion(self):
+        return self
+
+    def GetCurrentComp(self):
+        return self.target if self.page == "edit" else self.shown
+
+
+class _ShownComp(_PasteComp):
+    """Execute runs the chunk in the comp the Fusion page shows; the wrapper's guard is honoured as LuaJIT would."""
+
+    def GetAttrs(self):
+        return {"COMPS_Name": "Composition%d" % len(self.tools)}
+
+    def Execute(self, code):
+        self.res.shown.run(code)
+
+    def run(self, code):
+        m = re.search(r"if comp:GetData\('(\w+)'\) ~= 'pending' then return end", code)
+        if m and self.data.get(m.group(1)) != "pending":
+            return
+        _PasteComp.Execute(self, code)
+
+
+class PasteTargetsTheRequestedComp(unittest.TestCase):
+    TEXT = "{ Tools = ordered() { V2_A = Background { }, V2_B = Background { }, }, }"
+
+    def setUp(self):
+        from fusion_connector.ops import base
+        self._old, base.time = base.time, FakeClock()
+        self.target, self.other = _ShownComp(2), _ShownComp(5)
+        self.res = _ShownResolve(self.target, self.other)
+        self.ctx = base.Ctx()
+        self.ctx._resolve = self.res
+        self.other_before = (sorted(self.other.tools), dict(self.other.data))
+
+    def tearDown(self):
+        from fusion_connector.ops import base
+        base.time = self._old
+
+    def assert_other_untouched(self):
+        self.assertEqual((sorted(self.other.tools), dict(self.other.data)), self.other_before)
+
+    def test_another_comp_on_the_fusion_page_is_refused_before_anything_is_written(self):
+        with self.assertRaises(OpError) as e:
+            self.ctx.paste(self.target, self.TEXT)
+        self.assertEqual(e.exception.code, "NOT_CURRENT")
+        self.assert_other_untouched()
+        self.assertEqual(sorted(self.target.tools), ["T0", "T1"])
+
+    def test_make_current_is_tried_and_the_paste_lands_in_the_target(self):
+        ref = {"timeline": "Target_TL", "item": 0}
+        self.ctx.remember_ref(self.target, ref)
+        tried = []
+
+        def make_current(r):
+            tried.append(r)
+            self.res.shown = self.target
+            return self.target
+        self.ctx.make_current = make_current
+        res = self.ctx.paste(self.target, self.TEXT)
+        self.assertEqual(tried, [ref])
+        self.assertEqual(res["added"], ["V2_A", "V2_B"])
+        self.assertIn("V2_A", self.target.tools)
+        self.assert_other_untouched()
+
+    def test_a_paste_whose_tools_are_not_in_the_target_is_an_error(self):
+        self.res.page, self.res.shown = "fusion", self.target
+        self.target.FindTool = lambda n: None          # read back through the target object finds none of them
+        with self.assertRaises(OpError) as e:
+            self.ctx.paste(self.target, self.TEXT)
+        self.assertEqual(e.exception.code, "WRONG_COMP")
 
 
 if __name__ == "__main__":

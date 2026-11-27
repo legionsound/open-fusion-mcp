@@ -18,8 +18,37 @@ ENV = {"FUSION_MCP_FAKE_RESOLVE": STATE, "FUSION_MCP_TEST_FAULTS": "1", "FUSION_
        "FUSION_MCP_PROJECT_ALLOWLIST": "Testbed", "FUSION_MCP_READONLY": "", "FUSION_MCP_ALLOW_CATEGORIES": ""}
 _saved = {}
 
+# The few table rows these tests need (input.add_control reads the input table to tell built-in inputs from user controls).
+# Written by hand, not harvested: the Custom tool's registry row and two of its built-in inputs. Kept inline instead of as a
+# committed .tsv so the suite needs no generated tables (CI has none) and no Blackmagic data is committed (CONTRIBUTING).
+FIXTURE_TABLES = {
+    "fusion-21.1-registry.tsv": "# test fixture: columns reg_id, name, category, class, kind\nCustom\tCustom Tool\tMiscellaneous\t3\ttool\n",
+    "fusion-21.1-inputs.tsv": ("# test fixture\n# common_inputs: Comments CommentsNest\n@Custom\tCustomTool1\tMiscellaneous\toutputs=Output\n"
+                               "Custom\tBlend\tBlend\tNumber\tSlider\t1\t0..1|-1e+06..1e+06\t\n"
+                               "Custom\tNumberIn1\tNumber In 1\tNumber\tScrew\t0\t0..1|-1e+06..1e+06\t\n"),
+}
+
+
+def fixture_skills_root():
+    """A skills root whose folders link to the real ones, except fusion-reference/data, which holds FIXTURE_TABLES. Both the
+    server (this process) and the spawned worker read it through FUSION_MCP_SKILLS_ROOT."""
+    from fusion_connector import config
+    real, root = config.skills_root(), os.path.join(TMP, "skills")
+    os.makedirs(os.path.join(root, "fusion-reference", "data"))
+    for name in os.listdir(real):
+        if name != "fusion-reference":
+            os.symlink(os.path.join(real, name), os.path.join(root, name))
+    for name in os.listdir(os.path.join(real, "fusion-reference")):
+        if name != "data":
+            os.symlink(os.path.join(real, "fusion-reference", name), os.path.join(root, "fusion-reference", name))
+    for name, text in FIXTURE_TABLES.items():
+        with open(os.path.join(root, "fusion-reference", "data", name), "w", encoding="utf-8") as f:
+            f.write(text)
+    return root
+
 
 def setUpModule():
+    ENV["FUSION_MCP_SKILLS_ROOT"] = fixture_skills_root()
     for k, v in ENV.items():
         _saved[k] = os.environ.get(k)
         os.environ[k] = v
@@ -162,7 +191,7 @@ def controls():
     return [k for k, _ in fake_state()["tools"]["CTRL"]["uc"]]
 
 
-class UserControlsCase(Base):
+class UserControlsCase(Base):   # runs on FIXTURE_TABLES, with or without generated tables
     ADD_C = {"operation": "input.add_control", "args": {"tool": "CTRL", "id": "CtlC", "default": 0.5}}
 
     def test_add_control_keeps_pasted_controls(self):

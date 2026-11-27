@@ -222,6 +222,7 @@ class Lua:
                                           "calls.GetToolList = calls.GetToolList - 1 return table.concat(t, ',')").split(",") if x)
 
     def execute(self, wrapped, key):
-        """What comp:Execute does with the Ctx.lua wrapper: run it, then read the status the wrapper stored."""
+        """What Ctx.lua does: arm the key ('pending') on this comp, Execute the wrapper, then read the status the wrapper stored."""
+        self.run("comp:SetData(%r, 'pending')" % key)
         self.run(wrapped)
         return self.run("return comp:GetData(%r)" % key)

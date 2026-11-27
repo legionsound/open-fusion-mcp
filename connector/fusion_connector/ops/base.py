@@ -246,9 +246,12 @@ def lua_list(names):
 
 def lua_wrap(code, key):
     """The Execute body of Ctx.lua: run code (which sets `result`) and report through comp CustomData `key` (Execute is deferred and
-    silent, realities §9). Module level so the offline LuaJIT tests run exactly what Resolve runs."""
-    return ("local ok, err = pcall(function() local result = nil; %s; comp:SetData('%s', 'OK:' .. tostring(result)) end) "
-            "if not ok then comp:SetData('%s', 'ERR:' .. tostring(err)) end") % (code, key, key)
+    silent, realities §9). Module level so the offline LuaJIT tests run exactly what Resolve runs.
+    [live 2026-11-27] Execute runs in the comp the Fusion page shows, which can differ from the comp it was called on: the guard
+    returns, writing nothing, unless this is the comp Ctx.lua armed with 'pending'."""
+    return ("if comp:GetData('%s') ~= 'pending' then return end "
+            "local ok, err = pcall(function() local result = nil; %s; comp:SetData('%s', 'OK:' .. tostring(result)) end) "
+            "if not ok then comp:SetData('%s', 'ERR:' .. tostring(err)) end") % (key, code, key, key)
 
 _KIT = {}
 
@@ -311,6 +314,7 @@ class Ctx:
         self._resolve = None
         self.policy = {}
         self.notes = []
+        self._refs = {}   # id(comp object) -> (comp, ref it was resolved from): ensure_current can retry make_current
 
     # -- connection
     @property
@@ -419,7 +423,37 @@ class Ctx:
             raise OpError("NOT_FOUND", f"item '{item.GetName()}' has no Fusion comp {cref!r}",
                           details={"comps": list((item.GetFusionCompNameList() or {}).values()) if hasattr(item, "GetFusionCompNameList") else None},
                           hint="comp.create adds one; comp.list shows what exists.")
+        self.remember_ref(c, ref)
         return c
+
+    def remember_ref(self, comp, ref):
+        self._refs[id(comp)] = (comp, ref)
+
+    def ensure_current(self, comp):
+        """Before a write that runs through Execute (paste, Lua chunks): comp must be the comp the Fusion page shows.
+        [live 2026-11-27] The check must come AFTER the Fusion page is open: on the Edit page GetCurrentComp named the target (the
+        current timeline's item) while the Fusion page, once opened, still showed another comp, and the paste landed there. If it does not
+        hold, try make_current with the ref comp was resolved from; still not: NOT_CURRENT before anything is written."""
+        r = self.resolve
+        if r.GetCurrentPage() != "fusion":  # Paste returns False while another page shows
+            r.OpenPage("fusion")
+            time.sleep(1.5)
+            self.notes.append("opened the Fusion page")
+        if self.is_current(comp):
+            return
+        held = self._refs.get(id(comp))
+        ref = held[1] if held and held[0] is comp else None
+        if isinstance(ref, dict):
+            self.make_current(ref)
+            if self.is_current(comp):
+                self.notes.append("made the target comp current before writing")
+                return
+        # [live 2026-11-27] No comp names in details: COMPS_Name changes as the Fusion page loads comps, and a handle resolved on
+        # the Edit page went stale once the page loaded the item (make_current succeeded for a fresh handle, not for this one).
+        raise OpError("NOT_CURRENT", "the target comp is not the comp the Fusion page shows; nothing was written (realities §1)",
+                      hint="Call comp.set_current with the target {timeline, item} as its own call first, then retry: a comp handle "
+                           "resolved before the Fusion page loaded that comp does not become current.",
+                      details={"triedMakeCurrent": isinstance(ref, dict)})
 
     def identity(self, comp):
         """[rebuild F15] Which comp a render/compare ran in: item comps are all 'Composition1', so name the MediaOut1 source."""
@@ -746,6 +780,7 @@ class Ctx:
     def lua(self, comp, code, wait=5.0, key=None):
         """Run Lua inside comp via Execute; the chunk must assign `result` (string). Errors come back."""
         key = key or "fc_lua_" + uuid.uuid4().hex[:8]
+        self.ensure_current(comp)
         comp.SetData(key, "pending")
         comp.Execute(lua_wrap(code, key))
         t0 = time.time()
@@ -755,6 +790,9 @@ class Ctx:
             state = comp.GetData(key)
         comp.SetData(key, "")
         if state in (None, "pending"):
+            if not self.is_current(comp):   # the chunk ran in another comp, whose guard stopped it before any write
+                raise OpError("NOT_CURRENT", "the Fusion page switched to another comp; the Lua chunk wrote nothing",
+                              hint="Make the comp current (comp.set_current) and retry.")
             raise OpError("TIMEOUT", "Lua chunk did not report back (comp not current, or still running)",
                           hint="Execute is deferred; make the comp current (comp.set_current) and retry.")
         if state.startswith("ERR:"):
@@ -767,13 +805,7 @@ class Ctx:
         pasted top-level name (names: known names, else read from the text); the whole-comp before/after diff runs only when a
         pasted name already exists [fusion_v2 F9, sb3]."""
         from .build import setting_syntax_problems, setting_tool_names
-        if not self.is_current(comp):
-            raise OpError("NOT_CURRENT", "paste only works on the comp showing on the Fusion page (realities §1)",
-                          hint="Pass comp as {timeline, item} to auto-make it current, or call comp.set_current first.")
-        if self.resolve.GetCurrentPage() != "fusion":  # Paste returns False while another page shows
-            self.resolve.OpenPage("fusion")
-            time.sleep(1.5)
-            self.notes.append("opened the Fusion page for paste")
+        self.ensure_current(comp)   # Fusion page first, then identity; NOT_CURRENT before any write
         lex = setting_syntax_problems(text)  # Fusion would reject it and Paste(nil) would paste the clipboard
         if lex:
             raise OpError("INVALID_ARGS", "setting text would fail Fusion's parser: " + "; ".join(lex[:5]),
@@ -800,6 +832,11 @@ class Ctx:
                 added.remove(n)
         if not added:
             raise OpError("OPERATION_FAILED", "paste reported ok but created nothing (comp not current?)", hint="Validate the text with setting.validate.")
+        elsewhere = [n for n in added if comp.FindTool(n) is None]   # read back through the TARGET object, not the Lua `comp`
+        if elsewhere:
+            raise OpError("WRONG_COMP", "%d pasted tools are not in the target comp (%s)" % (len(elsewhere), ", ".join(elsewhere[:5])),
+                          hint="They landed in the comp the Fusion page shows: inspect it and undo there (comp.undo).",
+                          details={"notInTarget": elsewhere[:50], "target": (comp.GetAttrs() or {}).get("COMPS_Name")})
         renamed = {n: n for n in added}
         renamed.update(x.split("=", 1) for x in ren.split(",") if "=" in x)
         missing = [x for x in miss.split(",") if x]
